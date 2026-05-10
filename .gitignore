@@ -1,0 +1,44 @@
+# Node/NPM
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm/
+
+# Build directories
+dist/
+build/
+out/
+.next/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Flutter/Dart
+daoob_mobile/.dart_tool/
+daoob_mobile/.flutter-plugins
+daoob_mobile/.flutter-plugins-dependencies
+daoob_mobile/.packages
+daoob_mobile/build/
+daoob_mobile/.pub-cache/
+daoob_mobile/.pub/
+daoob_mobile/ios/Pods/
+daoob_mobile/android/.gradle/
+daoob_mobile/*.iml
+daoob_mobile/android/app/debug
+daoob_mobile/android/app/profile
+daoob_mobile/android/app/release
+
+# Logs
+logs
+*.log

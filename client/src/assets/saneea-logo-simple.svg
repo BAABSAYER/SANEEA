@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simple D logo with curved right side -->
+  <path d="M10 10H40C55 10 70 25 70 50C70 75 55 90 40 90H10V10Z" fill="#7986A3"/>
+  <path d="M20 25H40C45 25 50 35 50 50C50 65 45 75 40 75H20V25Z" fill="white"/>
+  <path d="M60 10C80 20 85 35 85 50C85 65 80 80 60 90" stroke="#9993B6" fill="none" stroke-width="10" stroke-linecap="round"/>
+</svg>

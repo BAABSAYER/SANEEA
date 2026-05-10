@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Saneea Icon</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#6A3DE8" cx="12" cy="12" r="12"></circle>
+        <path d="M7,7 L17,7 C18.1045695,7 19,7.8954305 19,9 L19,15 C19,16.1045695 18.1045695,17 17,17 L7,17 C5.8954305,17 5,16.1045695 5,15 L5,9 C5,7.8954305 5.8954305,7 7,7 Z" fill="#FFFFFF"></path>
+        <path d="M9,10 L15,10 C15.5522847,10 16,10.4477153 16,11 L16,13 C16,13.5522847 15.5522847,14 15,14 L9,14 C8.44771525,14 8,13.5522847 8,13 L8,11 C8,10.4477153 8.44771525,10 9,10 Z" fill="#6A3DE8"></path>
+    </g>
+</svg>

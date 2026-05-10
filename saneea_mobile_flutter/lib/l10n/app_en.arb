@@ -1,0 +1,227 @@
+{
+  "@@locale": "en",
+  "appName": "Saneea",
+  "@appName": {
+    "description": "The application name"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Login button text"
+  },
+  "register": "Register",
+  "@register": {
+    "description": "Register button text"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Password field label"
+  },
+  "forgotPassword": "Forgot Password?",
+  "@forgotPassword": {
+    "description": "Forgot password link text"
+  },
+  "dontHaveAccount": "Don't have an account? Register",
+  "@dontHaveAccount": {
+    "description": "Registration prompt text"
+  },
+  "alreadyHaveAccount": "Already have an account? Login",
+  "@alreadyHaveAccount": {
+    "description": "Login prompt text"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Name field label"
+  },
+  "confirmPassword": "Confirm Password",
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  "createAccount": "Create Account",
+  "@createAccount": {
+    "description": "Create account button text"
+  },
+  "welcomeToSaneea": "Welcome to Saneea!",
+  "@welcomeToSaneea": {
+    "description": "Welcome message"
+  },
+  "accountTypeInfo": "Create your account to start booking events or providing services",
+  "@accountTypeInfo": {
+    "description": "Account type information text"
+  },
+  "accountType": "Account Type",
+  "@accountType": {
+    "description": "Account type field label"
+  },
+  "client": "Client",
+  "@client": {
+    "description": "Client account type"
+  },
+  "vendor": "Vendor",
+  "@vendor": {
+    "description": "Vendor account type"
+  },
+  "home": "Home",
+  "@home": {
+    "description": "Home tab label"
+  },
+  "bookings": "Bookings",
+  "@bookings": {
+    "description": "Bookings tab label"
+  },
+  "messages": "Messages",
+  "@messages": {
+    "description": "Messages tab label"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile tab label"
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome greeting"
+  },
+  "whatPlanning": "What are you planning today?",
+  "@whatPlanning": {
+    "description": "Home screen question"
+  },
+  "categories": "Categories",
+  "@categories": {
+    "description": "Categories section title"
+  },
+  "viewAll": "View All",
+  "@viewAll": {
+    "description": "View all button text"
+  },
+  "wedding": "Wedding",
+  "@wedding": {
+    "description": "Wedding event type"
+  },
+  "corporate": "Corporate",
+  "@corporate": {
+    "description": "Corporate event type"
+  },
+  "birthday": "Birthday",
+  "@birthday": {
+    "description": "Birthday event type"
+  },
+  "customEvent": "Custom Event",
+  "@customEvent": {
+    "description": "Custom event type"
+  },
+  "recentBookings": "Recent Bookings",
+  "@recentBookings": {
+    "description": "Recent bookings section title"
+  },
+  "noBookingsYet": "No bookings yet",
+  "@noBookingsYet": {
+    "description": "Empty bookings message"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout menu item"
+  },
+  "smartEventPlatform": "Smart Event Management Platform",
+  "@smartEventPlatform": {
+    "description": "App tagline"
+  },
+  "eventCategories": "Event Categories",
+  "@eventCategories": {
+    "description": "Event categories title"
+  },
+  "whatTypeEvent": "What type of event are you planning?",
+  "@whatTypeEvent": {
+    "description": "Event type selection question"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending status"
+  },
+  "confirmed": "Confirmed",
+  "@confirmed": {
+    "description": "Confirmed status"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "noBookingsCategory": "No bookings in this category",
+  "@noBookingsCategory": {
+    "description": "Empty category message"
+  },
+  "messageAdmin": "Message Admin",
+  "@messageAdmin": {
+    "description": "Message admin button"
+  },
+  "startMessage": "Start Message",
+  "@startMessage": {
+    "description": "Start message button"
+  },
+  "noMessagesYet": "No messages yet",
+  "@noMessagesYet": {
+    "description": "Empty messages state"
+  },
+  "typeMessage": "Type a message...",
+  "@typeMessage": {
+    "description": "Message input placeholder"
+  },
+  "send": "Send",
+  "@send": {
+    "description": "Send button"
+  },
+  "submit": "Submit",
+  "@submit": {
+    "description": "Submit button"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading state text"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error message"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Success message"
+  },
+  "required": "Required",
+  "@required": {
+    "description": "Required field indicator"
+  },
+  "optional": "Optional",
+  "@optional": {
+    "description": "Optional field indicator"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "سنيع",
+    "slug": "saneea-mobile",
+    "scheme": "saneea",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/app_icon.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.saneea.mobile"
+    },
+    "android": {
+      "package": "com.saneea.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/app_icon_foreground.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-asset",
+      "expo-video"
+    ]
+  }
+}

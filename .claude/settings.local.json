@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\a3z9\\\\Downloads\\\\Saneea-main\\\\Saneea-main\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\a3z9\\\\Downloads\\\\Saneea-main\\\\Saneea-main\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(Head -50)",
+      "Bash(where puppeteer *)",
+      "Bash(node -e \"require\\('puppeteer'\\)\")",
+      "Bash(node -e \"require\\('html-pdf'\\)\")",
+      "PowerShell(\\(Get-Item \"C:\\\\Users\\\\a3z9\\\\Downloads\\\\Saneea-main\\\\Saneea-main\\\\brand-guide.pdf\"\\).Length / 1KB)",
+      "PowerShell(head -20)",
+      "PowerShell(docker exec saneea-app wget -qO- http://localhost:5000/api/health 2>&1)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:5000/api/health\" -UseBasicParsing -TimeoutSec 5 2>&1)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\a3z9\\\\Downloads\\\\Saneea-main\\\\Saneea-main\" -Recurse -Depth 2)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\a3z9\\\\Downloads\\\\Saneea-main\\\\Saneea-main\\\\client\\\\src\" -Recurse -Include \"*i18n*\", \"*translation*\", \"*locale*\" -File)",
+      "Bash(dir /s /b /A:D)"
+    ]
+  }
+}

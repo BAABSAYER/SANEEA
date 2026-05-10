@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>سنيع — دليل الهوية البصرية 2025</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* ── Jet Black Palette ── */
+    --jet-50:  #F5F5F5;
+    --jet-100: #E8E8E8;
+    --jet-200: #D1D1D1;
+    --jet-300: #ABABAB;
+    --jet-400: #757575;
+    --jet-500: #4A4A4A;
+    --jet-600: #2E2E2E;
+    --jet-700: #1A1A1A;
+    --jet-800: #111111;
+    --jet-900: #0A0A0A;
+    --jet-950: #050505;
+
+    /* ── Forest Green Palette ── */
+    --forest-50:  #E8F5ED;
+    --forest-100: #C5E5CF;
+    --forest-200: #9DD4B0;
+    --forest-300: #6DC08D;
+    --forest-400: #45AE71;
+    --forest-500: #2E9E5A;
+    --forest-600: #1F7A41;
+    --forest-700: #1A5C32;
+    --forest-800: #134525;
+    --forest-900: #0C2E18;
+
+    /* ── Neutral ── */
+    --neutral-0:   #FFFFFF;
+    --neutral-50:  #FAFAFA;
+    --neutral-100: #F5F5F5;
+    --neutral-200: #EBEBEB;
+    --neutral-300: #D4D4D4;
+    --neutral-500: #7A7A7A;
+    --neutral-700: #383838;
+    --neutral-900: #0E0E0E;
+
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --error:   #EF4444;
+    --info:    #3B82F6;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+    color: var(--neutral-900);
+    background: var(--neutral-0);
+    line-height: 1.6;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Page breaks ── */
+  .page { page-break-after: always; min-height: 100vh; padding: 0; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ── Cover ── */
+  .cover {
+    background: var(--jet-800);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 80px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 30% 60%, rgba(26,92,50,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 80% 20%, rgba(26,92,50,0.10) 0%, transparent 60%);
+  }
+
+  .cover-logo-wrap {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 56px;
+    margin-bottom: 48px;
+    z-index: 1;
+    box-shadow: 0 0 80px rgba(26,92,50,0.30);
+  }
+
+  .cover-logo-wrap img {
+    height: 90px;
+    display: block;
+  }
+
+  .cover-tagline {
+    font-size: 1.125rem;
+    letter-spacing: 0.08em;
+    color: var(--forest-400);
+    margin-bottom: 56px;
+    z-index: 1;
+    direction: rtl;
+    font-weight: 500;
+  }
+
+  .cover-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-align: center;
+    z-index: 1;
+    line-height: 1.2;
+  }
+
+  .cover-title span { color: var(--forest-400); }
+
+  .cover-subtitle {
+    margin-top: 12px;
+    font-size: 1rem;
+    color: rgba(255,255,255,0.55);
+    z-index: 1;
+    letter-spacing: 0.04em;
+  }
+
+  .cover-year {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+
+  .cover-ver {
+    position: absolute;
+    bottom: 40px;
+    right: 60px;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+
+  .cover-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    background: var(--forest-700);
+  }
+
+  /* ── Inner pages ── */
+  .inner {
+    padding: 72px 80px;
+  }
+
+  /* ── Section header ── */
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--forest-700);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--jet-800);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    line-height: 1.15;
+  }
+
+  .section-rule {
+    width: 48px;
+    height: 4px;
+    background: var(--forest-700);
+    border-radius: 2px;
+    margin: 16px 0 36px;
+  }
+
+  /* ── TOC ── */
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 24px;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: 14px;
+    background: var(--neutral-50);
+    transition: border-color 0.2s;
+  }
+
+  .toc-num {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--jet-200);
+    line-height: 1;
+    min-width: 40px;
+  }
+
+  .toc-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--jet-800);
+  }
+
+  .toc-sub {
+    font-size: 0.78rem;
+    color: var(--neutral-500);
+    margin-top: 2px;
+  }
+
+  /* ── Logo section ── */
+  .logo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .logo-variant {
+    border-radius: 16px;
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .logo-variant.light-bg {
+    background: #fff;
+    border: 1.5px solid var(--neutral-200);
+  }
+
+  .logo-variant.dark-bg {
+    background: var(--jet-800);
+  }
+
+  .logo-variant.green-bg {
+    background: var(--forest-700);
+  }
+
+  .logo-variant.grey-bg {
+    background: var(--neutral-100);
+    border: 1.5px solid var(--neutral-200);
+  }
+
+  .logo-variant img {
+    height: 70px;
+  }
+
+  .logo-variant.dark-bg img,
+  .logo-variant.green-bg img {
+    filter: brightness(0) invert(1);
+  }
+
+  .logo-caption {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--neutral-500);
+  }
+
+  .logo-variant.dark-bg .logo-caption,
+  .logo-variant.green-bg .logo-caption {
+    color: rgba(255,255,255,0.5);
+  }
+
+  .logo-clearspace {
+    margin-top: 40px;
+    padding: 36px;
+    border: 1.5px dashed var(--neutral-300);
+    border-radius: 16px;
+    text-align: center;
+    background: var(--neutral-50);
+  }
+
+  .logo-clearspace img {
+    height: 60px;
+    margin: 24px auto;
+    display: block;
+    outline: 1.5px dashed var(--forest-400);
+    outline-offset: 20px;
+  }
+
+  .logo-clearspace p {
+    font-size: 0.8rem;
+    color: var(--neutral-500);
+    margin-top: 28px;
+  }
+
+  /* ── Color palette ── */
+  .palette-group {
+    margin-bottom: 48px;
+  }
+
+  .palette-group-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--neutral-500);
+    margin-bottom: 16px;
+  }
+
+  .swatch-row {
+    display: flex;
+    border-radius: 14px;
+    overflow: hidden;
+    height: 88px;
+    box-shadow: 0 2px 12px rgba(17,17,17,0.08);
+  }
+
+  .swatch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    position: relative;
+  }
+
+  .swatch-name {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+  }
+
+  .swatch-hex {
+    font-size: 0.6rem;
+    opacity: 0.65;
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  .swatch.light-text .swatch-name,
+  .swatch.light-text .swatch-hex { color: #fff; }
+  .swatch.dark-text  .swatch-name,
+  .swatch.dark-text  .swatch-hex { color: rgba(0,0,0,0.7); }
+
+  /* Primary two-swatch hero */
+  .swatch-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .swatch-hero-item {
+    border-radius: 16px;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .swatch-hero-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 -40px 40px rgba(0,0,0,0.18);
+  }
+
+  .swatch-hero-item .big-name {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.01em;
+    position: relative;
+    z-index: 1;
+  }
+
+  .swatch-hero-item .big-hex {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.7);
+    position: relative;
+    z-index: 1;
+    font-family: monospace;
+    margin-top: 2px;
+  }
+
+  .swatch-hero-item .big-hsl {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Color token table */
+  .token-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 32px;
+  }
+
+  .token-table th {
+    text-align: left;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--neutral-500);
+    font-weight: 700;
+    padding: 0 12px 12px;
+    border-bottom: 1.5px solid var(--neutral-200);
+  }
+
+  .token-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--neutral-100);
+    vertical-align: middle;
+  }
+
+  .token-table tr:last-child td { border-bottom: none; }
+
+  .token-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .token-name { font-weight: 600; color: var(--jet-700); font-family: monospace; }
+  .token-val  { color: var(--neutral-500); font-family: monospace; }
+  .token-role { color: var(--neutral-700); }
+
+  /* ── Typography ── */
+  .type-scale-item {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .type-meta {
+    min-width: 120px;
+    font-size: 0.72rem;
+    color: var(--neutral-500);
+    font-family: monospace;
+  }
+
+  .type-sample-arabic { font-family: 'Almarai', serif; }
+
+  /* ── Spacing ── */
+  .spacing-grid {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .spacing-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spacing-bar {
+    background: var(--forest-700);
+    border-radius: 4px;
+    width: 36px;
+  }
+
+  .spacing-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  /* ── Radius ── */
+  .radius-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  .radius-item {
+    width: 80px;
+    height: 80px;
+    background: var(--jet-800);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .radius-item .r-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+
+  .radius-item .r-val {
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.45);
+    font-family: monospace;
+    margin-top: 2px;
+  }
+
+  /* ── Shadows ── */
+  .shadow-grid {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  .shadow-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+  }
+
+  .shadow-item .s-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--neutral-500);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Motion ── */
+  .motion-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .motion-label { min-width: 100px; font-size: 0.72rem; font-family: monospace; color: var(--jet-700); font-weight: 600; }
+  .motion-val   { font-size: 0.72rem; color: var(--neutral-500); font-family: monospace; }
+  .motion-bar   { flex: 1; height: 6px; background: var(--neutral-200); border-radius: 3px; overflow: hidden; }
+  .motion-fill  { height: 100%; border-radius: 3px; background: var(--forest-700); }
+
+  /* ── Components ── */
+  .component-section {
+    margin-bottom: 52px;
+  }
+
+  .component-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--neutral-500);
+    margin-bottom: 20px;
+  }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-primary   { background: var(--jet-800);    color: #fff; }
+  .btn-secondary { background: var(--forest-700); color: #fff; }
+  .btn-outline   { background: transparent; color: var(--jet-800); border: 1.5px solid var(--jet-800); }
+  .btn-outline-green { background: transparent; color: var(--forest-700); border: 1.5px solid var(--forest-700); }
+  .btn-ghost     { background: var(--neutral-100); color: var(--jet-700); }
+  .btn-danger    { background: var(--error);       color: #fff; }
+  .btn-sm { padding: 7px 16px; font-size: 0.78rem; }
+  .btn-lg { padding: 13px 28px; font-size: 1rem; }
+
+  /* Badges */
+  .badge-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .badge-confirmed  { background: #DCFCE7; color: #166534; }
+  .badge-pending    { background: #FEF9C3; color: #854D0E; }
+  .badge-cancelled  { background: #FEE2E2; color: #991B1B; }
+  .badge-completed  { background: #DBEAFE; color: #1E40AF; }
+  .badge-primary    { background: var(--jet-800);    color: #fff; }
+  .badge-secondary  { background: var(--forest-700); color: #fff; }
+
+  /* Card mock */
+  .card-mock {
+    background: #fff;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 320px;
+    box-shadow: 0 4px 16px rgba(17,17,17,0.08);
+  }
+
+  .card-img {
+    height: 140px;
+    background: linear-gradient(135deg, var(--forest-700) 0%, var(--jet-800) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+  }
+
+  .card-body { padding: 18px 20px; }
+  .card-title { font-size: 1rem; font-weight: 700; color: var(--jet-800); margin-bottom: 4px; }
+  .card-sub   { font-size: 0.8rem; color: var(--neutral-500); margin-bottom: 12px; }
+  .card-price { font-size: 1.25rem; font-weight: 900; color: var(--jet-800); }
+  .card-price span { font-size: 0.75rem; font-weight: 400; color: var(--neutral-500); }
+  .card-rating { color: var(--forest-600); font-size: 0.78rem; font-weight: 600; margin-bottom: 14px; }
+  .card-cta { width: 100%; text-align: center; justify-content: center; }
+
+  /* Input */
+  .input-mock {
+    width: 100%;
+    max-width: 360px;
+    border: 1.5px solid var(--neutral-300);
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 0.9rem;
+    color: var(--jet-800);
+    background: #fff;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .input-mock.focused {
+    border-color: var(--forest-700);
+    box-shadow: 0 0 0 3px rgba(26,92,50,0.14);
+  }
+
+  .input-mock.error {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+
+  .input-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--jet-700);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .input-group { margin-bottom: 20px; max-width: 360px; }
+
+  /* Bottom nav mock */
+  .bottom-nav {
+    background: #fff;
+    border: 1.5px solid var(--neutral-200);
+    border-radius: 16px;
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-around;
+    max-width: 400px;
+    box-shadow: 0 -2px 12px rgba(17,17,17,0.06);
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--neutral-400);
+  }
+
+  .nav-item.active { color: var(--jet-800); }
+  .nav-item.active .nav-icon { background: var(--jet-50, #f5f5f5); border-radius: 8px; }
+
+  .nav-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  /* Sidebar mock */
+  .sidebar-mock {
+    background: var(--jet-800);
+    border-radius: 16px;
+    padding: 24px 0;
+    max-width: 220px;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo-text {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-logo-sub {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    margin: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .sidebar-nav-item.active {
+    background: var(--forest-700);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .sidebar-nav-item.hover-state {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.85);
+  }
+
+  .icon { font-style: normal; }
+
+  /* ── Print / A4 ── */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  @media print {
+    body { font-size: 14px; }
+    .page { min-height: 297mm; page-break-after: always; }
+    .cover { min-height: 297mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 1 — COVER
+════════════════════════════════════════════════ -->
+<div class="page cover">
+  <div class="cover-stripe"></div>
+
+  <div class="cover-logo-wrap">
+    <img src="client/src/assets/logo.png" alt="Sunai Logo" />
+  </div>
+
+  <p class="cover-tagline">نضبطها لك</p>
+
+  <h1 class="cover-title">
+    Brand<br /><span>Identity</span><br />Guide
+  </h1>
+  <p class="cover-subtitle">Visual Standards &amp; Design Tokens</p>
+
+  <span class="cover-year">2025</span>
+  <span class="cover-ver">Version 1.0</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 2 — TABLE OF CONTENTS
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">Navigation</p>
+  <h2 class="section-title">Table of Contents</h2>
+  <div class="section-rule"></div>
+
+  <div class="toc-grid">
+    <div class="toc-item">
+      <span class="toc-num">01</span>
+      <div>
+        <div class="toc-label">Brand Identity</div>
+        <div class="toc-sub">Name · Mission · Logo</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <span class="toc-num">02</span>
+      <div>
+        <div class="toc-label">Color System</div>
+        <div class="toc-sub">Palette · Tokens · Semantic</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <span class="toc-num">03</span>
+      <div>
+        <div class="toc-label">Typography</div>
+        <div class="toc-sub">Fonts · Scale · Weight</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <span class="toc-num">04</span>
+      <div>
+        <div class="toc-label">Spacing &amp; Radius</div>
+        <div class="toc-sub">Grid · Border Radius · Shadows</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <span class="toc-num">05</span>
+      <div>
+        <div class="toc-label">Motion</div>
+        <div class="toc-sub">Duration · Easing</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <span class="toc-num">06</span>
+      <div>
+        <div class="toc-label">Components</div>
+        <div class="toc-sub">Buttons · Badges · Cards · Nav</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 60px; padding: 28px 32px; background: var(--neutral-50); border-radius: 16px; border: 1.5px solid var(--neutral-200);">
+    <p style="font-size: 0.78rem; color: var(--neutral-500); line-height: 1.7;">
+      This guide defines the visual language of <strong style="color: var(--jet-800);">Sunai (سنيع)</strong> — a three-sided event management platform connecting clients, vendors, and administrators across Saudi Arabia. The brand is built on the calligraphy wordmark: pure ink black for authority and precision, forest green for growth, trust, and the richness of Saudi event culture. Every token in this document is the single source of truth for the product UI.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 3 — BRAND IDENTITY
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">01 — Brand Identity</p>
+  <h2 class="section-title">Who We Are</h2>
+  <div class="section-rule"></div>
+
+  <!-- Identity rows -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 52px;">
+    <div style="padding: 24px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+      <p style="font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neutral-500); font-weight: 700; margin-bottom: 8px;">Brand Name</p>
+      <p style="font-size: 1.75rem; font-weight: 900; color: var(--jet-800); line-height: 1;">سنيع</p>
+      <p style="font-size: 1rem; color: var(--neutral-500); margin-top: 4px;">Sunai</p>
+    </div>
+    <div style="padding: 24px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+      <p style="font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neutral-500); font-weight: 700; margin-bottom: 8px;">Tagline</p>
+      <p style="font-size: 1.3rem; font-weight: 700; color: var(--forest-700);">نضبطها لك</p>
+      <p style="font-size: 0.875rem; color: var(--neutral-500); margin-top: 4px;">We'll set it up for you</p>
+    </div>
+    <div style="padding: 24px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+      <p style="font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neutral-500); font-weight: 700; margin-bottom: 8px;">Category</p>
+      <p style="font-size: 1rem; font-weight: 700; color: var(--jet-800);">Event Management SaaS</p>
+      <p style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 4px;">Client · Vendor · Admin</p>
+    </div>
+    <div style="padding: 24px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+      <p style="font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neutral-500); font-weight: 700; margin-bottom: 8px;">Market</p>
+      <p style="font-size: 1rem; font-weight: 700; color: var(--jet-800);">Saudi Arabia</p>
+      <p style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 4px;">Arabic-first, bilingual AR / EN</p>
+    </div>
+  </div>
+
+  <!-- Logo variations -->
+  <p class="section-label">Logo Variations</p>
+  <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--jet-800); margin-bottom: 20px;">Approved Usage</h3>
+
+  <div class="logo-grid">
+    <div class="logo-variant light-bg">
+      <img src="client/src/assets/logo.png" alt="Logo on White" />
+      <span class="logo-caption">Primary — White Background</span>
+    </div>
+    <div class="logo-variant dark-bg">
+      <img src="client/src/assets/logo.png" alt="Logo on Black" />
+      <span class="logo-caption">Reversed — Jet Black Background</span>
+    </div>
+    <div class="logo-variant grey-bg">
+      <img src="client/src/assets/logo.png" alt="Logo on Grey" />
+      <span class="logo-caption">Light Grey Background</span>
+    </div>
+    <div class="logo-variant green-bg">
+      <img src="client/src/assets/logo.png" alt="Logo on Green" />
+      <span class="logo-caption">Forest Green Background</span>
+    </div>
+  </div>
+
+  <div class="logo-clearspace">
+    <p style="font-size: 0.72rem; font-weight: 700; color: var(--neutral-500); letter-spacing: 0.1em; text-transform: uppercase;">Clear Space — Minimum x = cap-height of the wordmark</p>
+    <img src="client/src/assets/logo.png" alt="Logo Clearspace" />
+    <p>Always maintain a minimum clear space of 1× the cap-height around the logo. Never place competing visual elements within this zone.</p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 4 — COLOR SYSTEM
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">02 — Color System</p>
+  <h2 class="section-title">Palette</h2>
+  <div class="section-rule"></div>
+
+  <!-- Primary two -->
+  <div class="swatch-hero">
+    <div class="swatch-hero-item" style="background: var(--jet-800);">
+      <span class="big-name">Jet Black</span>
+      <span class="big-hex">#111111</span>
+      <span class="big-hsl">HSL(0, 0%, 7%) · jet-800</span>
+    </div>
+    <div class="swatch-hero-item" style="background: var(--forest-700);">
+      <span class="big-name">Forest Green</span>
+      <span class="big-hex">#1A5C32</span>
+      <span class="big-hsl">HSL(142, 56%, 23%) · forest-700</span>
+    </div>
+  </div>
+
+  <!-- Jet scale -->
+  <div class="palette-group">
+    <p class="palette-group-title">Jet — Primary Brand Black</p>
+    <div class="swatch-row">
+      <div class="swatch dark-text"  style="background: var(--jet-50);">  <span class="swatch-name">50</span>  <span class="swatch-hex">#F5F5F5</span></div>
+      <div class="swatch dark-text"  style="background: var(--jet-100);"> <span class="swatch-name">100</span> <span class="swatch-hex">#E8E8E8</span></div>
+      <div class="swatch dark-text"  style="background: var(--jet-200);"> <span class="swatch-name">200</span> <span class="swatch-hex">#D1D1D1</span></div>
+      <div class="swatch dark-text"  style="background: var(--jet-300);"> <span class="swatch-name">300</span> <span class="swatch-hex">#ABABAB</span></div>
+      <div class="swatch light-text" style="background: var(--jet-400);"> <span class="swatch-name">400</span> <span class="swatch-hex">#757575</span></div>
+      <div class="swatch light-text" style="background: var(--jet-500);"> <span class="swatch-name">500</span> <span class="swatch-hex">#4A4A4A</span></div>
+      <div class="swatch light-text" style="background: var(--jet-600);"> <span class="swatch-name">600</span> <span class="swatch-hex">#2E2E2E</span></div>
+      <div class="swatch light-text" style="background: var(--jet-700);"> <span class="swatch-name">700</span> <span class="swatch-hex">#1A1A1A</span></div>
+      <div class="swatch light-text" style="background: var(--jet-800); outline: 3px solid var(--forest-700); outline-offset: -3px;"> <span class="swatch-name">800 ★</span> <span class="swatch-hex">#111111</span></div>
+      <div class="swatch light-text" style="background: var(--jet-900);"> <span class="swatch-name">900</span> <span class="swatch-hex">#0A0A0A</span></div>
+    </div>
+  </div>
+
+  <!-- Forest scale -->
+  <div class="palette-group">
+    <p class="palette-group-title">Forest — Secondary Brand Green</p>
+    <div class="swatch-row">
+      <div class="swatch dark-text"  style="background: var(--forest-50);">  <span class="swatch-name">50</span>  <span class="swatch-hex">#E8F5ED</span></div>
+      <div class="swatch dark-text"  style="background: var(--forest-100);"> <span class="swatch-name">100</span> <span class="swatch-hex">#C5E5CF</span></div>
+      <div class="swatch dark-text"  style="background: var(--forest-200);"> <span class="swatch-name">200</span> <span class="swatch-hex">#9DD4B0</span></div>
+      <div class="swatch dark-text"  style="background: var(--forest-300);"> <span class="swatch-name">300</span> <span class="swatch-hex">#6DC08D</span></div>
+      <div class="swatch dark-text"  style="background: var(--forest-400);"> <span class="swatch-name">400</span> <span class="swatch-hex">#45AE71</span></div>
+      <div class="swatch light-text" style="background: var(--forest-500);"> <span class="swatch-name">500</span> <span class="swatch-hex">#2E9E5A</span></div>
+      <div class="swatch light-text" style="background: var(--forest-600);"> <span class="swatch-name">600</span> <span class="swatch-hex">#1F7A41</span></div>
+      <div class="swatch light-text" style="background: var(--forest-700); outline: 3px solid #fff; outline-offset: -3px;"> <span class="swatch-name">700 ★</span> <span class="swatch-hex">#1A5C32</span></div>
+      <div class="swatch light-text" style="background: var(--forest-800);"> <span class="swatch-name">800</span> <span class="swatch-hex">#134525</span></div>
+      <div class="swatch light-text" style="background: var(--forest-900);"> <span class="swatch-name">900</span> <span class="swatch-hex">#0C2E18</span></div>
+    </div>
+  </div>
+
+  <!-- Semantic -->
+  <div class="palette-group">
+    <p class="palette-group-title">Semantic — Status Colors</p>
+    <div class="swatch-row" style="height: 70px;">
+      <div class="swatch light-text" style="background: var(--success);"> <span class="swatch-name">Success</span> <span class="swatch-hex">#22C55E</span></div>
+      <div class="swatch dark-text"  style="background: var(--warning);"> <span class="swatch-name">Warning</span> <span class="swatch-hex">#F59E0B</span></div>
+      <div class="swatch light-text" style="background: var(--error);">   <span class="swatch-name">Error</span>   <span class="swatch-hex">#EF4444</span></div>
+      <div class="swatch light-text" style="background: var(--info);">    <span class="swatch-name">Info</span>    <span class="swatch-hex">#3B82F6</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 5 — COLOR TOKENS
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">02 — Color System</p>
+  <h2 class="section-title">Design Tokens</h2>
+  <div class="section-rule"></div>
+
+  <table class="token-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>CSS Variable</th>
+        <th>HSL Value</th>
+        <th>Hex</th>
+        <th>Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="token-swatch" style="background:#111111;"></span></td>
+        <td class="token-name">--primary</td>
+        <td class="token-val">0 0% 7%</td>
+        <td class="token-val">#111111</td>
+        <td class="token-role">Primary actions, headings, body text</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#fff; border: 1px solid #ddd;"></span></td>
+        <td class="token-name">--primary-foreground</td>
+        <td class="token-val">0 0% 100%</td>
+        <td class="token-val">#FFFFFF</td>
+        <td class="token-role">Text/icon on primary background</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#1A5C32;"></span></td>
+        <td class="token-name">--secondary</td>
+        <td class="token-val">142 56% 23%</td>
+        <td class="token-val">#1A5C32</td>
+        <td class="token-role">Accent CTAs, active states, links</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#fff; border: 1px solid #ddd;"></span></td>
+        <td class="token-name">--secondary-foreground</td>
+        <td class="token-val">0 0% 100%</td>
+        <td class="token-val">#FFFFFF</td>
+        <td class="token-role">Text/icon on secondary background</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#edf7f1;"></span></td>
+        <td class="token-name">--accent</td>
+        <td class="token-val">142 30% 94%</td>
+        <td class="token-val">#EDF7F1</td>
+        <td class="token-role">Subtle hover tints, light badges</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#F5F5F5;"></span></td>
+        <td class="token-name">--muted</td>
+        <td class="token-val">0 0% 96%</td>
+        <td class="token-val">#F5F5F5</td>
+        <td class="token-role">Quiet backgrounds, disabled states</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#707070;"></span></td>
+        <td class="token-name">--muted-foreground</td>
+        <td class="token-val">0 0% 44%</td>
+        <td class="token-val">#707070</td>
+        <td class="token-role">Secondary labels, placeholders</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#E0E0E0;"></span></td>
+        <td class="token-name">--border</td>
+        <td class="token-val">0 0% 88%</td>
+        <td class="token-val">#E0E0E0</td>
+        <td class="token-role">Dividers, card edges, input edges</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#1A5C32;"></span></td>
+        <td class="token-name">--ring</td>
+        <td class="token-val">142 56% 23%</td>
+        <td class="token-val">#1A5C32</td>
+        <td class="token-role">Focus ring (14% opacity)</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#111111;"></span></td>
+        <td class="token-name">--sidebar-background</td>
+        <td class="token-val">0 0% 7%</td>
+        <td class="token-val">#111111</td>
+        <td class="token-role">Admin sidebar surface</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#2E9E5A;"></span></td>
+        <td class="token-name">--sidebar-primary</td>
+        <td class="token-val">142 50% 40%</td>
+        <td class="token-val">#2E9E5A</td>
+        <td class="token-role">Active nav item on dark sidebar</td>
+      </tr>
+      <tr>
+        <td><span class="token-swatch" style="background:#EF4444;"></span></td>
+        <td class="token-name">--destructive</td>
+        <td class="token-val">0 84% 60%</td>
+        <td class="token-val">#EF4444</td>
+        <td class="token-role">Delete, cancel, error actions</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 6 — TYPOGRAPHY
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">03 — Typography</p>
+  <h2 class="section-title">Type System</h2>
+  <div class="section-rule"></div>
+
+  <!-- Font families -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px;">
+    <div style="padding: 28px; background: var(--jet-800); border-radius: 16px; color: #fff;">
+      <p style="font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.45); font-weight: 700; margin-bottom: 12px;">Arabic — Primary</p>
+      <p style="font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 8px;">الماراي</p>
+      <p style="font-size: 0.78rem; color: rgba(255,255,255,0.55);">Almarai · Regular 400 · Bold 700</p>
+      <p style="margin-top: 16px; font-size: 0.82rem; color: rgba(255,255,255,0.6); line-height: 1.7; direction: rtl;">مرحباً بك في سنيع — نضبطها لك بكل احترافية وأناقة.</p>
+    </div>
+    <div style="padding: 28px; background: var(--neutral-100); border-radius: 16px; border: 1.5px solid var(--neutral-200);">
+      <p style="font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); font-weight: 700; margin-bottom: 12px;">Latin — Secondary</p>
+      <p style="font-family: 'Roboto', sans-serif; font-size: 2rem; font-weight: 700; color: var(--jet-800); line-height: 1.2; margin-bottom: 8px;">Roboto</p>
+      <p style="font-size: 0.78rem; color: var(--neutral-500);">Roboto · Regular 400 · Bold 700</p>
+      <p style="margin-top: 16px; font-family: 'Roboto', sans-serif; font-size: 0.82rem; color: var(--neutral-600, #555); line-height: 1.7;">Sunai — your trusted event management platform.</p>
+    </div>
+  </div>
+
+  <!-- Type scale -->
+  <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 8px;">Type Scale</p>
+
+  <div class="type-scale-item">
+    <span class="type-meta">5xl · 48px · 700</span>
+    <span style="font-size: 3rem; font-weight: 700; color: var(--jet-800); line-height: 1;">Event</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">4xl · 36px · 700</span>
+    <span style="font-size: 2.25rem; font-weight: 700; color: var(--jet-800); line-height: 1;">Discover</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">3xl · 30px · 700</span>
+    <span style="font-size: 1.875rem; font-weight: 700; color: var(--jet-800);">Featured Vendors</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">2xl · 24px · 700</span>
+    <span style="font-size: 1.5rem; font-weight: 700; color: var(--jet-800);">Book Your Event</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">xl · 20px · 600</span>
+    <span style="font-size: 1.25rem; font-weight: 600; color: var(--jet-800);">Event Date &amp; Location</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">lg · 18px · 400</span>
+    <span style="font-size: 1.125rem; color: var(--jet-700);">Choose from our certified vendors</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">base · 16px · 400</span>
+    <span style="font-size: 1rem; color: var(--jet-600, #2e2e2e);">Complete your booking in minutes</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">sm · 14px · 400</span>
+    <span style="font-size: 0.875rem; color: var(--neutral-500);">Payments secured by industry-grade encryption</span>
+  </div>
+  <div class="type-scale-item">
+    <span class="type-meta">xs · 12px · 600</span>
+    <span style="font-size: 0.75rem; font-weight: 600; color: var(--neutral-500); letter-spacing: 0.08em; text-transform: uppercase;">CONFIRMED · UPCOMING · PENDING</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 7 — SPACING & RADIUS
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">04 — Spacing &amp; Radius</p>
+  <h2 class="section-title">Space &amp; Shape</h2>
+  <div class="section-rule"></div>
+
+  <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 20px;">Spacing Scale</p>
+
+  <div class="spacing-grid">
+    <div class="spacing-item"><div class="spacing-bar" style="height: 4px;"></div>  <div class="spacing-label">xs<br/>4px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 8px;"></div>  <div class="spacing-label">sm<br/>8px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 16px;"></div> <div class="spacing-label">md<br/>16px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 24px;"></div> <div class="spacing-label">lg<br/>24px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 32px;"></div> <div class="spacing-label">xl<br/>32px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 48px;"></div> <div class="spacing-label">2xl<br/>48px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 64px;"></div> <div class="spacing-label">3xl<br/>64px</div></div>
+    <div class="spacing-item"><div class="spacing-bar" style="height: 96px;"></div> <div class="spacing-label">4xl<br/>96px</div></div>
+  </div>
+
+  <div style="margin-top: 52px;">
+    <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 20px;">Border Radius</p>
+    <div class="radius-grid">
+      <div class="radius-item" style="border-radius: 0px;">        <span class="r-label">none</span>   <span class="r-val">0px</span></div>
+      <div class="radius-item" style="border-radius: 6px;">        <span class="r-label">sm</span>     <span class="r-val">6px</span></div>
+      <div class="radius-item" style="border-radius: 10px;">       <span class="r-label">md</span>     <span class="r-val">10px</span></div>
+      <div class="radius-item" style="border-radius: 14px;">       <span class="r-label">lg</span>     <span class="r-val">14px</span></div>
+      <div class="radius-item" style="border-radius: 20px;">       <span class="r-label">xl</span>     <span class="r-val">20px</span></div>
+      <div class="radius-item" style="border-radius: 28px;">       <span class="r-label">2xl</span>    <span class="r-val">28px</span></div>
+      <div class="radius-item" style="border-radius: 9999px; width: 80px; height: 80px;"> <span class="r-label">full</span> <span class="r-val">9999px</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top: 52px;">
+    <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 20px;">Shadows</p>
+    <div class="shadow-grid">
+      <div class="shadow-item" style="box-shadow: 0 1px 3px 0 rgba(17,17,17,0.08);">
+        <span style="font-size: 1.5rem;">□</span>
+        <span class="s-label">sm</span>
+      </div>
+      <div class="shadow-item" style="box-shadow: 0 4px 12px 0 rgba(17,17,17,0.10);">
+        <span style="font-size: 1.5rem;">□</span>
+        <span class="s-label">md · brand</span>
+      </div>
+      <div class="shadow-item" style="box-shadow: 0 10px 30px 0 rgba(17,17,17,0.14);">
+        <span style="font-size: 1.5rem;">□</span>
+        <span class="s-label">lg</span>
+      </div>
+      <div class="shadow-item" style="box-shadow: 0 20px 50px 0 rgba(17,17,17,0.18);">
+        <span style="font-size: 1.5rem;">□</span>
+        <span class="s-label">xl</span>
+      </div>
+      <div class="shadow-item" style="box-shadow: 0 0 20px 0 rgba(26,92,50,0.28);">
+        <span style="font-size: 1.5rem; color: var(--forest-700);">□</span>
+        <span class="s-label">green glow</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 8 — MOTION
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">05 — Motion</p>
+  <h2 class="section-title">Duration &amp; Easing</h2>
+  <div class="section-rule"></div>
+
+  <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 12px;">Duration</p>
+
+  <div class="motion-row">
+    <span class="motion-label">fast</span>
+    <div class="motion-bar"><div class="motion-fill" style="width:25%;"></div></div>
+    <span class="motion-val">150ms — hover, icon swaps</span>
+  </div>
+  <div class="motion-row">
+    <span class="motion-label">normal</span>
+    <div class="motion-bar"><div class="motion-fill" style="width:40%;"></div></div>
+    <span class="motion-val">250ms — card lift, panel open</span>
+  </div>
+  <div class="motion-row">
+    <span class="motion-label">slow</span>
+    <div class="motion-bar"><div class="motion-fill" style="width:60%;"></div></div>
+    <span class="motion-val">400ms — page enter, modal in</span>
+  </div>
+  <div class="motion-row" style="border-bottom: none;">
+    <span class="motion-label">slower</span>
+    <div class="motion-bar"><div class="motion-fill" style="width:90%;"></div></div>
+    <span class="motion-val">600ms — skeleton-to-content reveal</span>
+  </div>
+
+  <div style="margin-top: 48px;">
+    <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 16px;">Easing Curves</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="padding: 20px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+        <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800); margin-bottom: 4px;">default</p>
+        <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">cubic-bezier(0.4, 0, 0.2, 1)</p>
+        <p style="font-size: 0.72rem; color: var(--neutral-500); margin-top: 8px;">Standard ease-in-out for most transitions</p>
+      </div>
+      <div style="padding: 20px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+        <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800); margin-bottom: 4px;">spring</p>
+        <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">cubic-bezier(0.34, 1.56, 0.64, 1)</p>
+        <p style="font-size: 0.72rem; color: var(--neutral-500); margin-top: 8px;">Slight overshoot — buttons, cards, badges</p>
+      </div>
+      <div style="padding: 20px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+        <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800); margin-bottom: 4px;">easeOut</p>
+        <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">cubic-bezier(0, 0, 0.2, 1)</p>
+        <p style="font-size: 0.72rem; color: var(--neutral-500); margin-top: 8px;">Enter animations — elements sliding in</p>
+      </div>
+      <div style="padding: 20px; background: var(--neutral-50); border-radius: 14px; border: 1.5px solid var(--neutral-200);">
+        <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800); margin-bottom: 4px;">easeIn</p>
+        <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">cubic-bezier(0.4, 0, 1, 1)</p>
+        <p style="font-size: 0.72rem; color: var(--neutral-500); margin-top: 8px;">Exit animations — elements leaving view</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px; padding: 20px 24px; background: var(--forest-50, #E8F5ED); border-radius: 14px; border: 1.5px solid var(--forest-100, #C5E5CF);">
+    <p style="font-size: 0.78rem; color: var(--forest-800, #134525); line-height: 1.7;">
+      <strong>Principle:</strong> Motion should feel purposeful and never decorative. Use <em>fast</em> for micro-interactions (hover feedback), <em>normal</em> for layout shifts, <em>slow/slower</em> only for screen-level transitions. Keep all transitions under 600ms to respect users with prefers-reduced-motion.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 9 — COMPONENTS
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">06 — Components</p>
+  <h2 class="section-title">UI Specimens</h2>
+  <div class="section-rule"></div>
+
+  <!-- Buttons -->
+  <div class="component-section">
+    <p class="component-label">Buttons</p>
+    <div class="btn-row" style="margin-bottom: 12px;">
+      <button class="btn btn-primary">Book Now</button>
+      <button class="btn btn-secondary">Explore Vendors</button>
+      <button class="btn btn-outline">View Details</button>
+      <button class="btn btn-outline-green">Contact</button>
+      <button class="btn btn-ghost">Cancel</button>
+      <button class="btn btn-danger">Delete</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+      <button class="btn btn-primary" style="opacity: 0.4; cursor: not-allowed;">Disabled</button>
+    </div>
+  </div>
+
+  <!-- Badges -->
+  <div class="component-section">
+    <p class="component-label">Status Badges</p>
+    <div class="badge-row">
+      <span class="badge badge-confirmed">Confirmed</span>
+      <span class="badge badge-pending">Pending</span>
+      <span class="badge badge-cancelled">Cancelled</span>
+      <span class="badge badge-completed">Completed</span>
+      <span class="badge badge-primary">Primary</span>
+      <span class="badge badge-secondary">Secondary</span>
+    </div>
+  </div>
+
+  <!-- Inputs -->
+  <div class="component-section">
+    <p class="component-label">Form Inputs</p>
+    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+      <div class="input-group">
+        <label class="input-label">Default</label>
+        <input class="input-mock" type="text" value="" placeholder="e.g. Wedding Ceremony" readonly />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Focused</label>
+        <input class="input-mock focused" type="text" value="Wedding Ceremony" readonly />
+      </div>
+      <div class="input-group">
+        <label class="input-label" style="color: var(--error);">Error</label>
+        <input class="input-mock error" type="text" value="Invalid date" readonly />
+      </div>
+    </div>
+  </div>
+
+  <!-- Vendor Card -->
+  <div class="component-section">
+    <p class="component-label">Vendor Card</p>
+    <div class="card-mock">
+      <div class="card-img">🎉</div>
+      <div class="card-body">
+        <div class="card-title">Al-Noor Photography</div>
+        <div class="card-sub">Riyadh · Events &amp; Weddings</div>
+        <div class="card-rating">★★★★★ 4.9 (128 reviews)</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-price">SAR 2,500 <span>/ day</span></div>
+          <button class="btn btn-primary btn-sm card-cta">Book</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     PAGE 10 — NAVIGATION
+════════════════════════════════════════════════ -->
+<div class="page inner">
+  <p class="section-label">06 — Components</p>
+  <h2 class="section-title">Navigation</h2>
+  <div class="section-rule"></div>
+
+  <!-- Bottom nav -->
+  <div class="component-section">
+    <p class="component-label">Mobile Bottom Navigation</p>
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <div class="nav-icon">🏠</div>
+        Home
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">🔍</div>
+        Explore
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📅</div>
+        Bookings
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">💬</div>
+        Chat
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">👤</div>
+        Profile
+      </div>
+    </div>
+    <p style="font-size: 0.72rem; color: var(--neutral-500); margin-top: 12px;">Active item uses jet-black with light muted background. Inactive items use neutral-400.</p>
+  </div>
+
+  <!-- Admin sidebar -->
+  <div class="component-section">
+    <p class="component-label">Admin Sidebar</p>
+    <div style="display: flex; gap: 24px; align-items: flex-start;">
+      <div class="sidebar-mock">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-text">سنيع</div>
+          <div class="sidebar-logo-sub">Admin Panel</div>
+        </div>
+        <div class="sidebar-nav-item active">
+          <span class="icon">📊</span> Dashboard
+        </div>
+        <div class="sidebar-nav-item hover-state">
+          <span class="icon">📅</span> Bookings
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="icon">👥</span> Vendors
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="icon">🎪</span> Events
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="icon">⚙️</span> Settings
+        </div>
+      </div>
+      <div>
+        <p style="font-size: 0.78rem; color: var(--neutral-500); line-height: 1.7; max-width: 280px;">
+          The admin sidebar uses the jet-black surface (<code>--sidebar-background</code>). Active navigation items are highlighted with forest green (<code>--sidebar-primary</code>) for clear wayfinding. The logo appears inverted white via <code>filter: brightness(0) invert(1)</code>.
+        </p>
+        <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--jet-800); border: 1.5px solid rgba(255,255,255,0.1);"></div>
+          <div>
+            <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800);">Surface</p>
+            <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">--sidebar-background · #111111</p>
+          </div>
+        </div>
+        <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--forest-600, #1F7A41);"></div>
+          <div>
+            <p style="font-size: 0.72rem; font-weight: 700; color: var(--jet-800);">Active Nav</p>
+            <p style="font-size: 0.65rem; color: var(--neutral-500); font-family: monospace;">--sidebar-primary · HSL(142 50% 40%)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dos & Donts -->
+  <div style="margin-top: 40px;">
+    <p class="component-label">Do's &amp; Don'ts</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="padding: 20px; background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px;">
+        <p style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #166534; margin-bottom: 10px;">✓ Do</p>
+        <ul style="font-size: 0.78rem; color: #166534; line-height: 2; list-style: none; padding: 0;">
+          <li>Use jet-black for primary CTAs</li>
+          <li>Use forest green for accent / active states</li>
+          <li>Maintain clear space around the logo</li>
+          <li>Keep the logo on white, black, or forest surfaces</li>
+          <li>Use Almarai for all Arabic text</li>
+        </ul>
+      </div>
+      <div style="padding: 20px; background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 14px;">
+        <p style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #991B1B; margin-bottom: 10px;">✗ Don't</p>
+        <ul style="font-size: 0.78rem; color: #991B1B; line-height: 2; list-style: none; padding: 0;">
+          <li>Never stretch or distort the logo</li>
+          <li>Never use low-contrast color combinations</li>
+          <li>Never mix purple, orange, or gold with the brand</li>
+          <li>Never place the logo on a busy photograph</li>
+          <li>Never use font weights other than 400 or 700</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

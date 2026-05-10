@@ -1,0 +1,81 @@
+/* Font settings — Almarai (Arabic) + Roboto (Latin), defined in index.css */
+/* Color tokens live in index.css only — do not redefine :root vars here */
+
+html {
+  font-family: 'Almarai', 'Roboto', system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Almarai', 'Roboto', system-ui, sans-serif;
+}
+
+/* Hide scrollbar for different browsers */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Slide in animation */
+.slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* App container */
+.app-container {
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom styling for forms */
+.form-input {
+  @apply w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:border-transparent outline-none bg-background text-foreground;
+}
+
+.form-input:focus {
+  @apply ring-primary border-transparent;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-foreground mb-1;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-primary text-primary-foreground font-semibold py-3 px-6 rounded-lg shadow-brand hover:bg-primary/90 transition duration-200;
+}
+
+.btn-secondary {
+  @apply bg-transparent border border-white text-white font-medium py-3 px-6 rounded-lg hover:bg-white/10 transition duration-200;
+}
+
+.btn-outline {
+  @apply border border-border text-foreground font-medium py-3 px-6 rounded-lg hover:bg-muted transition duration-200;
+}
+
+/* Category icons */
+.category-icon {
+  @apply w-16 h-16 rounded-full flex items-center justify-center mb-1;
+}
+
+/* Badge styles */
+.badge {
+  @apply text-xs px-2 py-1 rounded-full flex items-center;
+}
+
+/* Rating stars */
+.rating-stars {
+  @apply flex text-secondary;
+}
