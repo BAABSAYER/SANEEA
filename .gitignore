@@ -17,6 +17,10 @@ out/
 .env.test.local
 .env.production.local
 
+# Expo config belongs only in saneea_mobile_react/
+/app.json
+/eas.json
+
 # IDE files
 .idea/
 .vscode/
