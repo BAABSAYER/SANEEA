@@ -15,17 +15,20 @@ function getExpoHost() {
   return hostUri?.split(":")[0];
 }
 
+const PRODUCTION_API_URL = "https://sannea-3npcj.ondigitalocean.app";
 const expoHost = getExpoHost();
-const fallbackHost =
-  process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === "web"
+export const DEVELOPMENT_API_URL =
+  Platform.OS === "web"
     ? "http://localhost:5000"
     : expoHost
       ? `http://${expoHost}:5000`
       : Platform.OS === "android"
         ? "http://10.0.2.2:5000"
-        : "http://localhost:5000");
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || fallbackHost;
+        : "http://localhost:5000";
+
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  PRODUCTION_API_URL;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;

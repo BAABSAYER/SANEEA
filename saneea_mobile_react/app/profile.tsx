@@ -1,11 +1,13 @@
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { BottomNav } from "../src/components/bottom-nav";
-import { BrandMark, Button, Header, Screen, Surface } from "../src/components/ui";
+import { BrandMark, Button, Header, Screen, Section, Surface } from "../src/components/ui";
 import { deleteMobileAccount } from "../src/api/mobile";
 import { useAuthStore } from "../src/state/auth-store";
 import { colors } from "../src/theme/colors";
+
+const PRIVACY_POLICY_URL = "https://sannea-3npcj.ondigitalocean.app/privacy-policy";
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -20,12 +22,23 @@ export default function ProfileScreen() {
         text: t("deleteAccount"),
         style: "destructive",
         onPress: async () => {
-          await deleteMobileAccount();
-          logout();
-          router.replace("/home");
+          try {
+            await deleteMobileAccount();
+            logout();
+            router.replace("/home");
+          } catch (error) {
+            Alert.alert(t("deleteAccount"), error instanceof Error ? error.message : t("deleteAccountFailed"));
+          }
         },
       },
     ]);
+  }
+
+  async function openPrivacyPolicy() {
+    const supported = await Linking.canOpenURL(PRIVACY_POLICY_URL);
+    if (supported) {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    }
   }
 
   return (
@@ -41,9 +54,16 @@ export default function ProfileScreen() {
           <Button title={t("loginSignup")} onPress={() => router.push("/auth/login")} />
         )}
       </Surface>
-      <Button title={t("language")} variant="ghost" onPress={() => setLanguage(i18n.language === "ar" ? "en" : "ar")} />
-      {user ? <Button title={t("logout")} variant="dark" onPress={() => logout()} /> : null}
-      {user ? <Button title={t("deleteAccount")} variant="ghost" onPress={deleteAccount} /> : null}
+      <Section title={t("settings")}>
+        <Button title={t("privacyPolicy")} variant="ghost" onPress={openPrivacyPolicy} />
+        <Button title={t("language")} variant="ghost" onPress={() => setLanguage(i18n.language === "ar" ? "en" : "ar")} />
+      </Section>
+      {user ? (
+        <Section title={t("accountSettings")}>
+          <Button title={t("logout")} variant="dark" onPress={() => logout()} />
+          <Button title={t("deleteAccount")} variant="ghost" onPress={deleteAccount} />
+        </Section>
+      ) : null}
     </Screen>
   );
 }
