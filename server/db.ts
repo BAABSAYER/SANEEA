@@ -15,5 +15,21 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+function createPoolConfig(connectionString: string) {
+  const url = new URL(connectionString);
+  const sslMode = url.searchParams.get("sslmode");
+
+  if (sslMode) {
+    url.searchParams.delete("sslmode");
+  }
+
+  return {
+    connectionString: url.toString(),
+    ...(sslMode === "require" || process.env.NODE_ENV === "production"
+      ? { ssl: { rejectUnauthorized: false } }
+      : {}),
+  };
+}
+
+export const pool = new Pool(createPoolConfig(process.env.DATABASE_URL));
 export const db = drizzle(pool, { schema });
