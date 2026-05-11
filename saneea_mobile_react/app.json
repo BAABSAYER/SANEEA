@@ -12,10 +12,10 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.saneea.mobile"
+      "bundleIdentifier": "com.saneea.app"
     },
     "android": {
-      "package": "com.saneea.mobile",
+      "package": "com.saneea.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/app_icon_foreground.png",
         "backgroundColor": "#FFFFFF"
@@ -29,6 +29,12 @@
       "expo-font",
       "expo-asset",
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3f017957-6c12-4351-8f2e-3546ae89749d"
+      }
+    }
   }
 }

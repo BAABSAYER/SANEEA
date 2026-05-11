@@ -37,7 +37,7 @@ export const brandIdentity = {
 
 export const brandLogos = {
   wordmark:       '/src/assets/logo.png',          // Primary: Arabic calligraphy wordmark PNG
-  appIcon:        '/src/assets/images/app_icon.png',
+  appIcon:        '/images/app_icon.png',
   favicon:        '/favicon.svg',
 } as const;
 
