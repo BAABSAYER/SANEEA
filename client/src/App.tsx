@@ -6,6 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
+import PrivacyPolicy from "@/pages/privacy-policy";
 
 // Admin Dashboard Pages
 import AdminDashboard from "./pages/admin/dashboard";
@@ -45,6 +46,8 @@ function Router() {
     <Switch>
       {/* Auth Route */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       
       {/* Default Route - Role-based redirect */}
       <ProtectedRoute path="/" component={Dashboard} />
