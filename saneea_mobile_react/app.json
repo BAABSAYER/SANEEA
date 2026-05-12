@@ -12,7 +12,14 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.saneea.app"
+      "bundleIdentifier": "com.saneea.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Saneea uses the camera when you choose to add photos or videos to your event request.",
+        "NSMicrophoneUsageDescription": "Saneea may use the microphone when recording videos for an event request.",
+        "NSPhotoLibraryUsageDescription": "Saneea uses your photo library when you choose photos or videos for an event request.",
+        "NSPhotoLibraryAddUsageDescription": "Saneea may save selected media related to your event request."
+      }
     },
     "android": {
       "package": "com.saneea.app",

@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
-import { I18nManager } from "react-native";
 import SplashScreen from "../src/components/splash-screen";
 import { setupI18n } from "../src/i18n";
 import { useAuthStore } from "../src/state/auth-store";
@@ -17,7 +16,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     setupI18n(language);
-    I18nManager.forceRTL(language === "ar");
   }, [language]);
 
   if (!fontsLoaded || !hasHydrated) return <SplashScreen />;
