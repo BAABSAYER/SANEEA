@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { getBooking, BookingSummary, PaymentRequest } from "../../src/api/mobile";
 import { ErrorState, LoadingState, PageHeader, Price, Screen, Section, Surface } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { colors } from "../../src/theme/colors";
 
 type Detail = BookingSummary & { packageItems: unknown[]; payments: PaymentRequest[] };
@@ -33,7 +34,7 @@ export default function BookingDetailScreen() {
 
   return (
     <Screen refreshing={loading} onRefresh={load}>
-      <PageHeader title={t("bookingDetails")} onBack={() => router.back()} />
+      <PageHeader title={t("bookingDetails")} onBack={goBackOrHome} />
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}
       {booking ? (

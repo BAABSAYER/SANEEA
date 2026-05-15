@@ -22,7 +22,6 @@
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.23",
     "expo-status-bar": "~3.0.9",
-    "expo-video": "~3.0.16",
     "i18next": "^24.2.3",
     "lucide-react-native": "^1.14.0",
     "react": "19.1.0",

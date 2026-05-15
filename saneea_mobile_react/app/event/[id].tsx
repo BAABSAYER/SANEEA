@@ -6,6 +6,7 @@ import { getEventPackages, EventPackage } from "../../src/api/mobile";
 import { MediaCarousel } from "../../src/components/media-carousel";
 import { BottomNav } from "../../src/components/bottom-nav";
 import { ErrorState, LoadingState, PageHeader, Price, Screen, Surface } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useBookingStore } from "../../src/state/booking-store";
 import { colors, radius } from "../../src/theme/colors";
 
@@ -39,7 +40,7 @@ export default function EventScreen() {
 
   return (
     <Screen bottom={<BottomNav />} refreshing={loading} onRefresh={load}>
-      <PageHeader title={t("choosePackage")} subtitle={eventName} onBack={() => router.back()} />
+      <PageHeader title={t("choosePackage")} subtitle={eventName} onBack={goBackOrHome} />
       {heroMedia ? <MediaCarousel images={heroMedia.images} videos={heroMedia.videos} /> : null}
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}

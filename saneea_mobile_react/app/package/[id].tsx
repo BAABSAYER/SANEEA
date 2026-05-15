@@ -6,6 +6,7 @@ import { createBooking, getPackageCustomization, getQuestionnaireItems, PackageC
 import { CityField, DateField, GuestCountField, TimeField } from "../../src/components/form-controls";
 import { MediaCarousel } from "../../src/components/media-carousel";
 import { Button, ErrorState, Field, LoadingState, PageHeader, Price, Screen, Section, Surface } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
 import { useBookingStore } from "../../src/state/booking-store";
 import { colors, radius } from "../../src/theme/colors";
@@ -87,7 +88,7 @@ export default function PackageScreen() {
       refreshing={loading}
       onRefresh={load}
     >
-      <PageHeader title={t("packageDetails")} subtitle={customization?.package.name} onBack={() => router.back()} />
+      <PageHeader title={t("packageDetails")} subtitle={customization?.package.name} onBack={goBackOrHome} />
       {customization ? <MediaCarousel images={customization.package.images} videos={customization.package.videos} /> : null}
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}

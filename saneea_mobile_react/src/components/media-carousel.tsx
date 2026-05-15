@@ -1,6 +1,5 @@
 import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Play } from "lucide-react-native";
-import { VideoView, useVideoPlayer } from "expo-video";
 import { useTranslation } from "react-i18next";
 import { colors, radius } from "../theme/colors";
 
@@ -18,18 +17,11 @@ type MediaCarouselProps = {
 
 function InlineVideo({ uri, height, width }: { uri: string; height: number; width: number }) {
   const { t } = useTranslation();
-  const player = useVideoPlayer(uri, (videoPlayer) => {
-    videoPlayer.loop = false;
-  });
 
   return (
     <View style={[styles.card, { height, width }]}>
-      <VideoView
-        player={player}
-        style={StyleSheet.absoluteFill}
-        nativeControls
-        contentFit="cover"
-      />
+      <Image source={{ uri }} style={StyleSheet.absoluteFill} blurRadius={14} />
+      <View style={styles.videoScrim} />
       <View style={styles.videoLabel}>
         <Play color={colors.surface} size={13} fill={colors.surface} />
         <Text style={styles.videoLabelText}>{t("video")}</Text>
@@ -92,6 +84,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     position: "absolute",
     top: 12,
+  },
+  videoScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10,10,10,0.42)",
   },
   videoLabelText: {
     color: colors.surface,

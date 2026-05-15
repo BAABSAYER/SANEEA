@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { I18nManager } from "react-native";
 
 export const resources = {
   ar: {
@@ -301,9 +300,9 @@ export function setupI18n(language: "ar" | "en" = "ar") {
   } else {
     i18n.changeLanguage(language);
   }
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(language === "ar");
   return i18n;
 }
+
+setupI18n("ar");
 
 export default i18n;

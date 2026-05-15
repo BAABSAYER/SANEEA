@@ -4,6 +4,7 @@
     "slug": "saneea-mobile",
     "scheme": "saneea",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/brand/app_icon.png",
     "userInterfaceStyle": "light",
@@ -12,6 +13,8 @@
     ],
     "ios": {
       "supportsTablet": false,
+      "newArchEnabled": false,
+      "buildNumber": "5",
       "bundleIdentifier": "com.saneea.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -23,6 +26,7 @@
     },
     "android": {
       "package": "com.saneea.app",
+      "icon": "./assets/brand/app_icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/app_icon_foreground.png",
         "backgroundColor": "#FFFFFF"
@@ -34,8 +38,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-asset",
-      "expo-video"
+      "expo-asset"
     ],
     "extra": {
       "router": {},

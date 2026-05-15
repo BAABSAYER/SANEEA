@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { createBooking, getQuestionnaireItems, QuestionnaireItem } from "../../src/api/mobile";
 import { CityField, DateField, GuestCountField, TimeField } from "../../src/components/form-controls";
 import { Button, ErrorState, Field, LoadingState, PageHeader, Screen, Section } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
 import { useBookingStore } from "../../src/state/booking-store";
 import { colors } from "../../src/theme/colors";
@@ -75,7 +76,7 @@ export default function EventRequestScreen() {
       refreshing={loading}
       onRefresh={load}
     >
-      <PageHeader title={t("directRequestTitle")} subtitle={t("directRequestSubtitle")} onBack={() => router.back()} />
+      <PageHeader title={t("directRequestTitle")} subtitle={t("directRequestSubtitle")} onBack={goBackOrHome} />
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}
       {!loading && !error ? (

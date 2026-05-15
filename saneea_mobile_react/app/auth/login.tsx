@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { loginWithPhone, requestPasswordResetOtp, requestSignupOtp, verifyPasswordResetOtp, verifySignupOtp } from "../../src/api/mobile";
 import { OtpCodeInput, emptyOtpDigits } from "../../src/components/otp-code-input";
 import { BrandMark, Button, Field, PageHeader, Screen, Surface } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
 import { colors } from "../../src/theme/colors";
 
@@ -75,7 +76,7 @@ export default function LoginScreen() {
 
   return (
     <Screen>
-      <PageHeader title={t("authTitle")} subtitle={t("authSubtitle")} onBack={() => router.back()} right={<BrandMark />} />
+      <PageHeader title={t("authTitle")} subtitle={t("authSubtitle")} onBack={goBackOrHome} right={<BrandMark />} />
       <Surface>
         <View style={{ gap: 14 }}>
           {!isOtp ? <Field label={t("phone")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" /> : null}

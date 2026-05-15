@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { BookingSummary, getBookings } from "../../src/api/mobile";
 import { BottomNav } from "../../src/components/bottom-nav";
 import { Button, ErrorState, LoadingState, PageHeader, Price, Screen, Surface } from "../../src/components/ui";
+import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
 import { colors } from "../../src/theme/colors";
 
@@ -34,7 +35,7 @@ export default function BookingsScreen() {
 
   return (
     <Screen bottom={<BottomNav />} refreshing={loading} onRefresh={load}>
-      <PageHeader title={t("bookings")} onBack={() => router.back()} />
+      <PageHeader title={t("bookings")} onBack={goBackOrHome} />
       {!token ? <Button title={t("loginSignup")} onPress={() => router.push("/auth/login")} /> : null}
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}
