@@ -14,7 +14,6 @@
     "ios": {
       "supportsTablet": false,
       "newArchEnabled": false,
-      "buildNumber": "5",
       "bundleIdentifier": "com.saneea.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
