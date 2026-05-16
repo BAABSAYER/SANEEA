@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { ReactNode, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -149,14 +148,14 @@ export function DateField({
             style={localStyles.iconButton}
             onPress={() => setVisibleMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1))}
           >
-            <ChevronLeft color={colors.black} size={20} />
+            <Text style={localStyles.iconButtonText}>{"<"}</Text>
           </Pressable>
           <Text style={localStyles.monthTitle}>{monthFormatter.format(visibleMonth)}</Text>
           <Pressable
             style={localStyles.iconButton}
             onPress={() => setVisibleMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1))}
           >
-            <ChevronRight color={colors.black} size={20} />
+            <Text style={localStyles.iconButtonText}>{">"}</Text>
           </Pressable>
         </View>
         <View style={localStyles.yearHeader}>
@@ -371,6 +370,11 @@ const localStyles = StyleSheet.create({
     height: 42,
     justifyContent: "center",
     width: 42,
+  },
+  iconButtonText: {
+    color: colors.black,
+    fontFamily: "Almarai-Bold",
+    fontSize: 20,
   },
   monthTitle: {
     color: colors.black,

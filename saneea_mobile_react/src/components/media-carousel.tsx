@@ -1,5 +1,4 @@
 import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { Play } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { colors, radius } from "../theme/colors";
 
@@ -23,7 +22,7 @@ function InlineVideo({ uri, height, width }: { uri: string; height: number; widt
       <Image source={{ uri }} style={StyleSheet.absoluteFill} blurRadius={14} />
       <View style={styles.videoScrim} />
       <View style={styles.videoLabel}>
-        <Play color={colors.surface} size={13} fill={colors.surface} />
+        <Text style={styles.playIcon}>Play</Text>
         <Text style={styles.videoLabelText}>{t("video")}</Text>
       </View>
     </View>
@@ -93,5 +92,11 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontFamily: "Almarai-Bold",
     fontSize: 12,
+  },
+  playIcon: {
+    color: colors.surface,
+    fontFamily: "Almarai-Bold",
+    fontSize: 10,
+    textTransform: "uppercase",
   },
 });

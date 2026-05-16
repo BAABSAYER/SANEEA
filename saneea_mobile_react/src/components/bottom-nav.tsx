@@ -1,5 +1,6 @@
 import { router, usePathname } from "expo-router";
-import { CalendarDays, Package, UserRound } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { colors, radius } from "../theme/colors";
@@ -7,20 +8,19 @@ import { colors, radius } from "../theme/colors";
 export function BottomNav() {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const items = [
-    { label: t("packages"), path: "/home", icon: Package },
-    { label: t("bookings"), path: "/bookings", icon: CalendarDays },
-    { label: t("profile"), path: "/profile", icon: UserRound },
+  const items: Array<{ label: string; path: "/home" | "/bookings" | "/profile"; icon: ComponentProps<typeof Ionicons>["name"] }> = [
+    { label: t("packages"), path: "/home", icon: "cube-outline" },
+    { label: t("bookings"), path: "/bookings", icon: "calendar-outline" },
+    { label: t("profile"), path: "/profile", icon: "person-outline" },
   ];
 
   return (
     <View style={styles.wrap}>
       {items.map((item) => {
         const active = pathname === item.path || (item.path === "/home" && pathname.startsWith("/event"));
-        const Icon = item.icon;
         return (
           <Pressable key={item.path} style={styles.item} onPress={() => router.replace(item.path)}>
-            <Icon color={active ? colors.green : colors.muted} size={22} />
+            <Ionicons name={item.icon} color={active ? colors.green : colors.muted} size={22} />
             <Text style={[styles.label, active && styles.activeLabel]}>{item.label}</Text>
           </Pressable>
         );
