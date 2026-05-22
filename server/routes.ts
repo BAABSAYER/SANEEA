@@ -16,6 +16,7 @@ import {
   BOOKING_STATUS, USER_TYPES, BUNDLE_TIERS, PAYMENT_STATUS, messages, users, User, EventBundle, BundleOption,
   bookings as bookingsTable, eventBundles as eventBundlesTable, pricingHistory as pricingHistoryTable,
   eventTypes as eventTypesTable, eventItems as eventItemsTable, itemVendorOptions as itemVendorOptionsTable,
+  questionnaireItems as questionnaireItemsTable,
   bundleItems as bundleItemsTable, vendors as vendorsTable, services as servicesTable, payments as paymentsTable,
   bookingConfirmations as bookingConfirmationsTable, reviews as reviewsTable,
   pushNotificationDevices as pushNotificationDevicesTable
@@ -587,6 +588,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return result;
   }
 
+  async function getBookingOrderDetailsForErp(
+    booking: typeof bookingsTable.$inferSelect,
+    eventName: string,
+    packageName: string,
+  ) {
+    const selectedItemOptions = parseMobileSelectedItemOptions(booking.selectedOptions);
+    const selectedOptionIds = selectedItemOptions.map((selection) => selection.optionId);
+
+    const selectedOptions = selectedOptionIds.length > 0
+      ? await db
+          .select({
+            id: itemVendorOptionsTable.id,
+            eventItemId: itemVendorOptionsTable.eventItemId,
+            eventItemName: eventItemsTable.name,
+            eventItemCategory: eventItemsTable.category,
+            vendorId: itemVendorOptionsTable.vendorId,
+            vendorName: vendorsTable.businessName,
+            optionName: itemVendorOptionsTable.optionName,
+            description: itemVendorOptionsTable.description,
+            price: itemVendorOptionsTable.price,
+          })
+          .from(itemVendorOptionsTable)
+          .leftJoin(eventItemsTable, eq(itemVendorOptionsTable.eventItemId, eventItemsTable.id))
+          .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+          .where(sql`${itemVendorOptionsTable.id} in ${selectedOptionIds}`)
+      : [];
+
+    const selectedOptionById = new Map(selectedOptions.map((option) => [option.id, option]));
+    const orderSelections = selectedItemOptions.map((selection) => ({
+      ...selection,
+      option: selectedOptionById.get(selection.optionId) || null,
+    }));
+    const selectionByEventItemId = new Map(orderSelections.map((selection) => [selection.eventItemId, selection]));
+
+    const packageItems = booking.bundleId
+      ? await db
+          .select({
+            bundleItemId: bundleItemsTable.id,
+            eventItemId: bundleItemsTable.eventItemId,
+            eventItemName: eventItemsTable.name,
+            eventItemDescription: eventItemsTable.description,
+            eventItemCategory: eventItemsTable.category,
+            isRequired: eventItemsTable.isRequired,
+            quantity: bundleItemsTable.quantity,
+            priceOverride: bundleItemsTable.priceOverride,
+            defaultOptionId: bundleItemsTable.defaultOptionId,
+            defaultOptionName: itemVendorOptionsTable.optionName,
+            defaultOptionDescription: itemVendorOptionsTable.description,
+            defaultOptionPrice: itemVendorOptionsTable.price,
+            defaultVendorId: itemVendorOptionsTable.vendorId,
+            defaultVendorName: vendorsTable.businessName,
+          })
+          .from(bundleItemsTable)
+          .leftJoin(eventItemsTable, eq(bundleItemsTable.eventItemId, eventItemsTable.id))
+          .leftJoin(itemVendorOptionsTable, eq(bundleItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+          .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+          .where(and(eq(bundleItemsTable.bundleId, booking.bundleId), eq(bundleItemsTable.isIncluded, true)))
+          .orderBy(bundleItemsTable.displayOrder)
+      : [];
+
+    const questionnaireResponses =
+      booking.questionnaireResponses && typeof booking.questionnaireResponses === "object" && !Array.isArray(booking.questionnaireResponses)
+        ? booking.questionnaireResponses as Record<string, unknown>
+        : {};
+    const questionIds = Object.keys(questionnaireResponses)
+      .map((questionId) => Number(questionId))
+      .filter((questionId) => Number.isInteger(questionId) && questionId > 0);
+    const questions = questionIds.length > 0
+      ? await db
+          .select({
+            id: questionnaireItemsTable.id,
+            questionText: questionnaireItemsTable.questionText,
+            questionType: questionnaireItemsTable.questionType,
+          })
+          .from(questionnaireItemsTable)
+          .where(sql`${questionnaireItemsTable.id} in ${questionIds}`)
+      : [];
+    const questionById = new Map(questions.map((question) => [question.id, question]));
+
+    return {
+      bookingId: booking.id,
+      status: booking.status,
+      event: {
+        id: booking.eventTypeId,
+        name: eventName,
+      },
+      package: {
+        id: booking.bundleId,
+        name: booking.bundleId ? packageName : null,
+      },
+      schedule: {
+        date: booking.eventDate,
+        time: booking.eventTime,
+        location: booking.location,
+        guestCount: booking.guestCount,
+      },
+      pricing: {
+        budget: booking.budget,
+        basePrice: booking.basePrice,
+        optionsPrice: booking.optionsPrice,
+        totalPrice: booking.totalPrice,
+        currency: "SAR",
+      },
+      specialRequests: booking.specialRequests,
+      questionnaire: Object.entries(questionnaireResponses).map(([questionId, response]) => ({
+        questionId: Number(questionId) || questionId,
+        question: questionById.get(Number(questionId)) || null,
+        response,
+      })),
+      attachments: booking.clientAttachments || [],
+      selectedItemOptions: orderSelections,
+      packageItems: packageItems.map((item) => {
+        const selected = selectionByEventItemId.get(item.eventItemId) || null;
+        const selectedOption = selected?.option || null;
+        const quantity = selected?.quantity || item.quantity || 1;
+        const unitPrice = selectedOption?.price ?? item.priceOverride ?? item.defaultOptionPrice ?? 0;
+
+        return {
+          ...item,
+          quantity,
+          selectedOption,
+          effectiveOption: selectedOption || {
+            id: item.defaultOptionId,
+            optionName: item.defaultOptionName,
+            description: item.defaultOptionDescription,
+            price: item.defaultOptionPrice,
+            vendorId: item.defaultVendorId,
+            vendorName: item.defaultVendorName,
+          },
+          lineTotal: unitPrice * quantity,
+        };
+      }),
+      rawSelectedOptions: booking.selectedOptions,
+    };
+  }
+
   async function syncBookingToErp(bookingId: number, eventName?: string | null, packageName?: string | null) {
     const [row] = await db
       .select({
@@ -605,6 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const resolvedEventName = eventName || row.eventTypeName || "Event";
     const resolvedPackageName = packageName || row.bundleName || "Package";
+    const orderDetails = await getBookingOrderDetailsForErp(row.booking, resolvedEventName, resolvedPackageName);
 
     await syncCustomerToErp(row.client, { sourceAction: "booking_created", bookingId });
 
@@ -629,6 +767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPrice: row.booking.totalPrice,
         questionnaireResponses: row.booking.questionnaireResponses,
         clientAttachments: row.booking.clientAttachments,
+        selectedOptions: row.booking.selectedOptions,
+        orderDetails,
       },
     });
 
@@ -648,6 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eventName: resolvedEventName,
           packageName: resolvedPackageName,
           status: row.booking.status,
+          orderDetails,
         },
       });
 
@@ -665,6 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bookingId,
         customerExternalId: customerExternalId(row.client.id),
         invoiceExternalId: invoiceExternalId(bookingId),
+        orderDetails,
       },
     });
 
