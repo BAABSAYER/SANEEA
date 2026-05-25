@@ -4,10 +4,9 @@ import { useTranslation } from "react-i18next";
 import { BottomNav } from "../src/components/bottom-nav";
 import { BrandMark, Button, Header, Screen, Section, Surface } from "../src/components/ui";
 import { deleteMobileAccount } from "../src/api/mobile";
+import { PRIVACY_POLICY_URL } from "../src/api/client";
 import { useAuthStore } from "../src/state/auth-store";
 import { colors } from "../src/theme/colors";
-
-const PRIVACY_POLICY_URL = "https://sannea-3npcj.ondigitalocean.app/privacy-policy";
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();

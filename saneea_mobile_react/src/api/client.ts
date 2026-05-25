@@ -2,6 +2,11 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { useAuthStore } from "../state/auth-store";
 
+type SaneeaExpoExtra = {
+  apiBaseUrl?: string;
+  privacyPolicyUrl?: string;
+};
+
 function getExpoHost() {
   const constants = Constants as typeof Constants & {
     manifest?: { debuggerHost?: string };
@@ -15,7 +20,8 @@ function getExpoHost() {
   return hostUri?.split(":")[0];
 }
 
-const PRODUCTION_API_URL = "https://sannea-3npcj.ondigitalocean.app";
+const expoExtra = (Constants.expoConfig?.extra || {}) as SaneeaExpoExtra;
+const PRODUCTION_API_URL = (expoExtra.apiBaseUrl || "https://sannea-3npcj.ondigitalocean.app").replace(/\/+$/, "");
 const expoHost = getExpoHost();
 export const DEVELOPMENT_API_URL =
   Platform.OS === "web"
@@ -27,8 +33,12 @@ export const DEVELOPMENT_API_URL =
         : "http://localhost:5000";
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ||
   PRODUCTION_API_URL;
+
+export const PRIVACY_POLICY_URL =
+  expoExtra.privacyPolicyUrl ||
+  `${API_BASE_URL}/privacy-policy`;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;

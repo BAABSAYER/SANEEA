@@ -17,17 +17,19 @@ if (!process.env.DATABASE_URL) {
 
 function createPoolConfig(connectionString: string) {
   const url = new URL(connectionString);
-  const sslMode = url.searchParams.get("sslmode");
+  const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
 
   if (sslMode) {
     url.searchParams.delete("sslmode");
   }
 
+  const useSsl =
+    sslMode === "require" ||
+    (!sslMode && process.env.NODE_ENV === "production");
+
   return {
     connectionString: url.toString(),
-    ...(sslMode === "require" || process.env.NODE_ENV === "production"
-      ? { ssl: { rejectUnauthorized: false } }
-      : {}),
+    ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
   };
 }
 
