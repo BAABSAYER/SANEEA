@@ -116,6 +116,18 @@ export const vendors = pgTable("vendors", {
   amenities: jsonb("amenities"),
   features: jsonb("features"),
   photos: jsonb("photos"),
+  previousWork: jsonb("previous_work").$type<Array<{
+    title: string;
+    description?: string | null;
+    url?: string | null;
+    imageUrl?: string | null;
+  }>>(),
+  attachments: jsonb("attachments").$type<Array<{
+    url: string;
+    fileName?: string | null;
+    contentType?: string | null;
+    description?: string | null;
+  }>>(),
 });
 
 // Services table
@@ -394,6 +406,8 @@ export const insertVendorSchema = createInsertSchema(vendors).pick({
   amenities: true,
   features: true,
   photos: true,
+  previousWork: true,
+  attachments: true,
 });
 
 export const insertServiceSchema = createInsertSchema(services);
@@ -545,7 +559,7 @@ export type OtpVerification = typeof otpVerifications.$inferSelect;
 export type InsertOtpVerification = z.infer<typeof insertOtpVerificationSchema>;
 
 export type Vendor = typeof vendors.$inferSelect;
-export type InsertVendor = z.infer<typeof insertVendorSchema>;
+export type InsertVendor = typeof vendors.$inferInsert;
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;

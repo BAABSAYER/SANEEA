@@ -35,9 +35,9 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/bookings"],
   });
   
-  // No longer fetching vendors
-  const isLoadingVendors = false;
-  const vendors: any[] = [];
+  const { data: vendors = [], isLoading: isLoadingVendors } = useQuery<any[]>({
+    queryKey: ["/api/vendors"],
+  });
   
   // Fetch messages (last 10)
   const { data: recentMessages = [], isLoading: isLoadingMessages, error: messagesError } = useQuery<any[]>({

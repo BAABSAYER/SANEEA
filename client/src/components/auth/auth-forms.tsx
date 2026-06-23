@@ -82,9 +82,9 @@ export function LoginForm() {
         <div>
           <div className="flex justify-between items-center">
             <Label htmlFor="password">Password</Label>
-            <button type="button" className="text-sm text-primary font-medium hover:text-primary/80 transition-colors">
-              Forgot password?
-            </button>
+            <span className="text-xs text-muted-foreground">
+              Contact an admin to reset access
+            </span>
           </div>
           <Input
             id="password"

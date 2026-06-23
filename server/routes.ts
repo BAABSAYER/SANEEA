@@ -168,6 +168,40 @@ const clientAttachmentSchema = z.object({
   contentType: z.string().min(3).max(120).optional().nullable(),
 });
 
+const vendorPreviousWorkSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(1000).optional().nullable(),
+  url: z.string().trim().url().optional().nullable(),
+  imageUrl: z.string().trim().url().optional().nullable(),
+});
+
+const vendorAttachmentSchema = z.object({
+  url: z.string().trim().url(),
+  fileName: z.string().trim().min(1).max(180).optional().nullable(),
+  contentType: z.string().trim().min(3).max(120).optional().nullable(),
+  description: z.string().trim().max(500).optional().nullable(),
+});
+
+const vendorProfileSchema = z.object({
+  businessName: z.string().trim().min(1).max(160),
+  category: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(2000).optional().nullable(),
+  email: z.preprocess(
+    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+    z.string().trim().email().max(255).optional()
+  ),
+  phone: z.string().trim().max(30).optional().nullable(),
+  address: z.string().trim().max(240).optional().nullable(),
+  city: z.string().trim().max(120).optional().nullable(),
+  priceRange: z.string().trim().max(80).optional().nullable(),
+  capacity: z.coerce.number().int().min(0).optional().nullable(),
+  photos: z.array(z.string().url()).optional().default([]),
+  previousWork: z.array(vendorPreviousWorkSchema).optional().default([]),
+  attachments: z.array(vendorAttachmentSchema).optional().default([]),
+});
+
+type VendorProfileInput = z.infer<typeof vendorProfileSchema>;
+
 const bookingWithBundleSchema = z.object({
   eventTypeId: z.coerce.number().int().positive(),
   bundleId: z.coerce.number().int().positive().optional().nullable(),
@@ -327,6 +361,26 @@ const bookingStatusFlow: Record<string, string[]> = {
 function canTransitionBookingStatus(fromStatus: string, toStatus: string) {
   if (fromStatus === toStatus) return true;
   return (bookingStatusFlow[fromStatus] || []).includes(toStatus);
+}
+
+function compactVendorProfileInput(input: VendorProfileInput): Partial<InsertVendor> {
+  return {
+    businessName: input.businessName,
+    category: input.category,
+    description: input.description || null,
+    address: input.address || null,
+    city: input.city || null,
+    priceRange: input.priceRange || null,
+    capacity: input.capacity ?? null,
+    photos: input.photos || [],
+    previousWork: (input.previousWork || []).map((item) => ({
+      title: item.title,
+      description: item.description || null,
+      url: item.url || null,
+      imageUrl: item.imageUrl || null,
+    })),
+    attachments: input.attachments || [],
+  };
 }
 
 type MobileSelectedOptionsShape = {
@@ -3299,30 +3353,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       if (req.user.userType === 'admin') {
-        const email = String(req.body.email || "").trim();
-        const phone = req.body.phone ? String(req.body.phone).trim() : null;
-        const businessName = String(req.body.businessName || "").trim();
+        const input = vendorProfileSchema.parse(req.body);
+        const email = String(input.email || "").trim();
+        const phone = input.phone ? String(input.phone).trim() : null;
+        const businessName = input.businessName;
 
-        if (!email || !businessName || !req.body.category) {
-          return res.status(400).json({ message: 'Business name, category, and email are required' });
+        if (!businessName || !input.category) {
+          return res.status(400).json({ message: 'Business name and category are required' });
         }
 
-        let user = await storage.getUserByEmail(email);
+        let user = email ? await storage.getUserByEmail(email) : undefined;
         const temporaryPassword = `Vendor-${Math.random().toString(36).slice(2, 10)}`;
         let createdVendorUser = false;
 
         if (!user) {
-          const usernameBase = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_") || `vendor_${Date.now()}`;
+          const usernameSource = email ? email.split("@")[0] : businessName;
+          const usernameBase = usernameSource.replace(/[^a-zA-Z0-9_]/g, "_") || `vendor_${Date.now()}`;
           let username = usernameBase;
           let suffix = 1;
           while (await storage.getUserByUsername(username)) {
             username = `${usernameBase}_${suffix++}`;
           }
+          const userEmail = email || `${username}_${randomUUID().slice(0, 8)}@vendors.saneea.local`;
 
           user = await storage.createUser({
             username,
             password: temporaryPassword,
-            email,
+            email: userEmail,
             fullName: businessName,
             phone,
             userType: USER_TYPES.VENDOR,
@@ -3335,13 +3392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let vendor = await storage.getVendorByUserId(user.id);
         const vendorData: Partial<InsertVendor> = {
           userId: user.id,
-          businessName,
-          category: req.body.category,
-          description: req.body.description || null,
-          address: req.body.address || null,
-          city: req.body.city || null,
-          priceRange: req.body.priceRange || null,
-          capacity: req.body.capacity ? Number(req.body.capacity) : null,
+          ...compactVendorProfileInput(input),
         };
 
         const existedVendor = Boolean(vendor);
@@ -3367,8 +3418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (vendor) {
         // Update existing vendor
+        const input = vendorProfileSchema.parse(req.body);
         const vendorData: Partial<InsertVendor> = {
-          ...req.body,
+          ...compactVendorProfileInput(input),
           userId: req.user.id
         };
         
@@ -3376,10 +3428,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(vendor);
       } else {
         // Create new vendor
+        const input = vendorProfileSchema.parse(req.body);
         const vendorData: InsertVendor = {
-          ...req.body,
+          ...compactVendorProfileInput(input),
           userId: req.user.id
-        };
+        } as InsertVendor;
         
         vendor = await storage.createVendor(vendorData);
         return res.status(201).json(vendor);
@@ -3405,21 +3458,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const vendor = await storage.getVendor(id);
       if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
 
-      const vendorData: Partial<InsertVendor> = {
-        businessName: req.body.businessName,
-        category: req.body.category,
-        description: req.body.description || null,
-        address: req.body.address || null,
-        city: req.body.city || null,
-        priceRange: req.body.priceRange || null,
-        capacity: req.body.capacity ? Number(req.body.capacity) : null,
-      };
+      const input = vendorProfileSchema.parse(req.body);
+      const vendorData: Partial<InsertVendor> = compactVendorProfileInput(input);
 
       const updatedVendor = await storage.updateVendor(id, vendorData);
       const userUpdates: Partial<User> = {};
-      if (req.body.email) userUpdates.email = String(req.body.email);
-      if (req.body.phone !== undefined) userUpdates.phone = req.body.phone || null;
-      if (req.body.businessName) userUpdates.fullName = req.body.businessName;
+      if (input.email) userUpdates.email = String(input.email);
+      if (input.phone !== undefined) userUpdates.phone = input.phone || null;
+      if (input.businessName) userUpdates.fullName = input.businessName;
       const updatedUser = Object.keys(userUpdates).length
         ? await storage.updateUser(vendor.userId, userUpdates)
         : await storage.getUser(vendor.userId);
@@ -4255,25 +4301,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Vendor profile not found' });
       }
       
+      const input = vendorProfileSchema.parse(req.body);
+
       // Update user data
       const userUpdates = {
-        email: req.body.email,
-        phone: req.body.phone,
-        fullName: req.body.businessName // Use business name as full name
+        email: input.email || req.user.email,
+        phone: input.phone || null,
+        fullName: input.businessName // Use business name as full name
       };
       
       await storage.updateUser(req.user.id, userUpdates);
       
       // Update vendor data
-      const vendorUpdates = {
-        businessName: req.body.businessName,
-        description: req.body.description,
-        address: req.body.address,
-        city: req.body.city,
-        categories: req.body.categories,
-        eventTypes: req.body.eventTypes,
-        profileImage: req.body.profileImage
-      };
+      const vendorUpdates = compactVendorProfileInput(input);
       
       const updatedVendor = await storage.updateVendor(vendor.id, vendorUpdates);
       

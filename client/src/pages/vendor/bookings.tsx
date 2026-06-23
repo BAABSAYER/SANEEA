@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Calendar, Filter, MessageSquare, Users, 
@@ -25,6 +25,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Booking } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type FilterTab = "upcoming" | "pending" | "past" | "all";
 type VendorBooking = Booking & {
@@ -36,6 +38,7 @@ type VendorBooking = Booking & {
 
 export default function VendorBookings() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<FilterTab>("upcoming");
   const [selectedBooking, setSelectedBooking] = useState<VendorBooking | null>(null);
@@ -50,7 +53,28 @@ export default function VendorBookings() {
   // Fetch bookings for this vendor
   const { data: bookings, isLoading } = useQuery<VendorBooking[]>({
     queryKey: ['/api/vendor/bookings', activeTab],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/vendor/bookings?filter=${activeTab}`);
+      return res.json();
+    },
     enabled: !!user && user.userType === 'vendor',
+  });
+
+  const approvalMutation = useMutation({
+    mutationFn: async ({ bookingId, status }: { bookingId: number; status: "approved" | "rejected" }) => {
+      const res = await apiRequest("POST", `/api/bookings/${bookingId}/vendor-approval`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Booking updated", description: "The booking status was updated successfully." });
+      setSelectedBooking(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/vendor/bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings/recent'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vendors/dashboard'] });
+    },
+    onError: (error) => {
+      toast({ title: "Could not update booking", description: error.message, variant: "destructive" });
+    },
   });
   
   // Filter bookings based on active tab
@@ -196,12 +220,24 @@ export default function VendorBookings() {
                 Message Client
               </Button>
               
-              {selectedBooking.status === 'pending' && (
+              {['pending', 'vendor_review'].includes(selectedBooking.status) && (
                 <Button 
                   className="flex-1 bg-primary text-primary-foreground"
+                  disabled={approvalMutation.isPending}
+                  onClick={() => approvalMutation.mutate({ bookingId: selectedBooking.id, status: "approved" })}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Confirm Booking
+                  {approvalMutation.isPending ? "Updating..." : "Confirm Booking"}
+                </Button>
+              )}
+              {['pending', 'vendor_review'].includes(selectedBooking.status) && (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={approvalMutation.isPending}
+                  onClick={() => approvalMutation.mutate({ bookingId: selectedBooking.id, status: "rejected" })}
+                >
+                  Reject
                 </Button>
               )}
             </DialogFooter>

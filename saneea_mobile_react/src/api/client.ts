@@ -21,7 +21,7 @@ function getExpoHost() {
 }
 
 const expoExtra = (Constants.expoConfig?.extra || {}) as SaneeaExpoExtra;
-const PRODUCTION_API_URL = (expoExtra.apiBaseUrl || "https://sannea-3npcj.ondigitalocean.app").replace(/\/+$/, "");
+const PRODUCTION_API_URL = (expoExtra.apiBaseUrl || "https://saneea.baabsayer.sa").replace(/\/+$/, "");
 const expoHost = getExpoHost();
 export const DEVELOPMENT_API_URL =
   Platform.OS === "web"

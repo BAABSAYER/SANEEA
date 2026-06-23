@@ -226,6 +226,39 @@ export function createMobileUploadIntent(input: { filename: string; contentType:
   });
 }
 
+export async function uploadMobileFile(input: {
+  uri: string;
+  filename: string;
+  contentType: string;
+  folder?: string;
+}) {
+  const intent = await createMobileUploadIntent({
+    filename: input.filename,
+    contentType: input.contentType,
+    folder: input.folder,
+  });
+  if (!intent.uploadUrl) {
+    throw new Error("uploadNotConfigured");
+  }
+
+  const fileResponse = await fetch(input.uri);
+  const blob = await fileResponse.blob();
+  const uploadResponse = await fetch(intent.uploadUrl, {
+    method: "PUT",
+    headers: intent.headers,
+    body: blob,
+  });
+  if (!uploadResponse.ok) {
+    throw new Error("uploadAttachmentFailed");
+  }
+
+  return {
+    url: intent.publicUrl,
+    fileName: input.filename,
+    contentType: input.contentType,
+  };
+}
+
 export function submitPaymentReceipt(input: {
   paymentId: number;
   receiptUrl: string;

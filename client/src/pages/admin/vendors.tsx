@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { AdminLayout } from "@/components/admin-layout";
@@ -44,9 +44,59 @@ import { Star, Plus, Edit, Trash2, Search, Filter } from "lucide-react";
 import { SERVICE_CATEGORIES, Vendor } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+type SupplierService = {
+  id: number;
+  name: string;
+  description?: string | null;
+  price?: number | null;
+  duration?: number | null;
+  isPackage?: boolean | null;
+};
+
+type SupplierDetails = Vendor & {
+  email?: string | null;
+  phone?: string | null;
+  services?: SupplierService[];
+  previousWork?: Array<{ title: string; description?: string | null; url?: string | null; imageUrl?: string | null }>;
+  attachments?: Array<{ url: string; fileName?: string | null; description?: string | null; contentType?: string | null }>;
+};
+
 async function readOptionalJson(res: Response) {
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+function lines(value: FormDataEntryValue | null) {
+  return String(value || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parsePreviousWork(value: FormDataEntryValue | null) {
+  return lines(value).map((line) => {
+    const [title, url, imageUrl, description] = line.split("|").map((part) => part?.trim() || "");
+    return { title, url: url || null, imageUrl: imageUrl || null, description: description || null };
+  }).filter((item) => item.title);
+}
+
+function parseAttachments(value: FormDataEntryValue | null) {
+  return lines(value).map((line) => {
+    const [url, fileName, description] = line.split("|").map((part) => part?.trim() || "");
+    return { url, fileName: fileName || null, description: description || null, contentType: null };
+  }).filter((item) => item.url);
+}
+
+function previousWorkToText(value: any[] | null | undefined) {
+  return (value || [])
+    .map((item) => [item.title || "", item.url || "", item.imageUrl || "", item.description || ""].join(" | "))
+    .join("\n");
+}
+
+function attachmentsToText(value: any[] | null | undefined) {
+  return (value || [])
+    .map((item) => [item.url || "", item.fileName || "", item.description || ""].join(" | "))
+    .join("\n");
 }
 
 export default function AdminVendors() {
@@ -63,6 +113,37 @@ export default function AdminVendors() {
   const { data: vendors = [], isLoading: isLoadingVendors } = useQuery<Vendor[]>({
     queryKey: ["/api/vendors"],
   });
+
+  const { data: serviceSuppliers = [], isLoading: isLoadingServiceSuppliers } = useQuery<SupplierDetails[]>({
+    queryKey: ["/api/vendors/with-services", vendors.map((vendor: any) => vendor.id).join(",")],
+    enabled: activeView === "services" && vendors.length > 0,
+    queryFn: async () => {
+      const details = await Promise.all(
+        vendors.map(async (vendor: any) => {
+          const res = await apiRequest("GET", `/api/vendors/${vendor.id}`);
+          return await res.json();
+        })
+      );
+      return details;
+    },
+  });
+
+  const { data: selectedVendorDetails, isLoading: isLoadingSelectedVendorDetails } = useQuery<SupplierDetails>({
+    queryKey: ["/api/vendors", selectedVendor?.id],
+    enabled: isViewingVendor && Boolean(selectedVendor?.id),
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/vendors/${selectedVendor.id}`);
+      return await res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (selectedVendorDetails) {
+      setSelectedVendor((current: any) => current?.id === selectedVendorDetails.id
+        ? { ...current, ...selectedVendorDetails }
+        : current);
+    }
+  }, [selectedVendorDetails]);
   
   // Create vendor mutation
   const createVendorMutation = useMutation({
@@ -139,11 +220,14 @@ export default function AdminVendors() {
       businessName: formData.get("businessName") as string,
       category: formData.get("category") as string,
       description: formData.get("description") as string,
-      email: formData.get("email") as string,
+      email: String(formData.get("email") || "").trim() || undefined,
       phone: formData.get("phone") as string,
       address: formData.get("address") as string,
       city: formData.get("city") as string,
       priceRange: formData.get("priceRange") as string,
+      photos: lines(formData.get("photos")),
+      previousWork: parsePreviousWork(formData.get("previousWork")),
+      attachments: parseAttachments(formData.get("attachments")),
     };
     
     createVendorMutation.mutate(vendorData);
@@ -260,7 +344,7 @@ export default function AdminVendors() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="email">{t("common.email")}</Label>
-                          <Input id="email" name="email" type="email" required />
+                          <Input id="email" name="email" type="email" />
                         </div>
                         
                         <div className="space-y-2">
@@ -294,6 +378,21 @@ export default function AdminVendors() {
                             <SelectItem value="luxury">{t("adminVendors.priceLuxury")}</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="photos">Supplier photos</Label>
+                        <Textarea id="photos" name="photos" placeholder="One image URL per line" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="previousWork">Previous work</Label>
+                        <Textarea id="previousWork" name="previousWork" placeholder="Title | link URL | image URL | description" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="attachments">Attachments</Label>
+                        <Textarea id="attachments" name="attachments" placeholder="File URL | file name | description" />
                       </div>
                       
                       <DialogFooter>
@@ -423,20 +522,67 @@ export default function AdminVendors() {
               <CardHeader>
                 <CardTitle>{t("navigation.services")}</CardTitle>
                 <CardDescription>
-                  {t("adminVendors.manageVendorServices")}
+                  Services are managed inside each supplier profile.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="rounded-full bg-primary/10 p-3 mb-4">
-                    <Filter className="h-6 w-6 text-primary" />
+              <CardContent>
+                {isLoadingServiceSuppliers ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">{t("adminVendors.servicesManagement")}</h3>
-                  <p className="text-muted-foreground text-sm max-w-md mb-4">
-                    {t("adminVendors.servicesComingSoonDescription")}
-                  </p>
-                  <Button variant="outline">{t("common.comingSoon")}</Button>
-                </div>
+                ) : serviceSuppliers.length > 0 ? (
+                  <div className="space-y-4">
+                    {serviceSuppliers.map((supplier) => (
+                      <div key={supplier.id} className="rounded-md border p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="font-medium">{supplier.businessName}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {supplier.services?.length || 0} services · {supplier.previousWork?.length || 0} previous work items
+                            </p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => handleViewVendor(supplier)}>
+                            Open supplier
+                          </Button>
+                        </div>
+                        {supplier.services?.length ? (
+                          <div className="mt-4 grid gap-3 md:grid-cols-2">
+                            {supplier.services.map((service) => (
+                              <div key={service.id} className="rounded-md bg-muted/40 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <h4 className="text-sm font-medium">{service.name}</h4>
+                                    {service.description ? (
+                                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{service.description}</p>
+                                    ) : null}
+                                  </div>
+                                  {service.isPackage ? <Badge variant="secondary">Package</Badge> : null}
+                                </div>
+                                {service.price !== null && service.price !== undefined ? (
+                                  <p className="mt-2 text-sm font-medium">{service.price.toLocaleString()} SAR</p>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-4 text-sm text-muted-foreground">No services added for this supplier yet.</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="rounded-full bg-primary/10 p-3 mb-4">
+                      <Filter className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">No supplier services yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-md">
+                      Add suppliers first, then open each supplier profile to review services and previous work.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -454,6 +600,12 @@ export default function AdminVendors() {
             
             {selectedVendor && (
               <form onSubmit={handleUpdateVendor} className="space-y-4">
+                {isLoadingSelectedVendorDetails ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : null}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="editBusinessName">{t("vendorProfile.businessName")}</Label>
@@ -522,6 +674,126 @@ export default function AdminVendors() {
                       <Star className="h-4 w-4 text-yellow-400 mr-1" />
                       <span>{selectedVendor.rating ? selectedVendor.rating.toFixed(1) : t("adminVendors.noRatings")}</span>
                     </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editPhotos">Supplier photos</Label>
+                  <Textarea
+                    id="editPhotos"
+                    value={(selectedVendor.photos || []).join("\n")}
+                    placeholder="One image URL per line"
+                    onChange={(e) => setSelectedVendor({ ...selectedVendor, photos: lines(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editPreviousWork">Previous work</Label>
+                  <Textarea
+                    id="editPreviousWork"
+                    value={previousWorkToText(selectedVendor.previousWork)}
+                    placeholder="Title | link URL | image URL | description"
+                    onChange={(e) => setSelectedVendor({ ...selectedVendor, previousWork: parsePreviousWork(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editAttachments">Attachments</Label>
+                  <Textarea
+                    id="editAttachments"
+                    value={attachmentsToText(selectedVendor.attachments)}
+                    placeholder="File URL | file name | description"
+                    onChange={(e) => setSelectedVendor({ ...selectedVendor, attachments: parseAttachments(e.target.value) })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md border p-3">
+                    <h4 className="text-sm font-medium">Previous work</h4>
+                    <p className="text-sm text-muted-foreground">{selectedVendor.previousWork?.length || 0} items</p>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <h4 className="text-sm font-medium">Attachments</h4>
+                    <p className="text-sm text-muted-foreground">{selectedVendor.attachments?.length || 0} files</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 rounded-md border p-4">
+                  <div>
+                    <h4 className="font-medium">Supplier page preview</h4>
+                    <p className="text-sm text-muted-foreground">
+                      This is the supplier-facing profile content: info, previous work, attachments, and services.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <h5 className="text-sm font-medium">Info</h5>
+                      <p className="mt-1 text-sm text-muted-foreground">{selectedVendor.description || "No description added."}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {[selectedVendor.category, selectedVendor.city, selectedVendor.priceRange].filter(Boolean).join(" · ") || "No category/location added"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <h5 className="text-sm font-medium">Attachments</h5>
+                      {selectedVendor.attachments?.length ? (
+                        <div className="mt-2 space-y-1">
+                          {selectedVendor.attachments.slice(0, 4).map((attachment: any, index: number) => (
+                            <a
+                              key={`${attachment.url}-${index}`}
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block truncate text-xs text-primary"
+                            >
+                              {attachment.fileName || attachment.description || attachment.url}
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-sm text-muted-foreground">No attachments added.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h5 className="mb-2 text-sm font-medium">Previous work</h5>
+                    {selectedVendor.previousWork?.length ? (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {selectedVendor.previousWork.map((work: any, index: number) => (
+                          <div key={`${work.title}-${index}`} className="rounded-md bg-muted/40 p-3">
+                            <h6 className="text-sm font-medium">{work.title}</h6>
+                            {work.description ? <p className="mt-1 text-xs text-muted-foreground">{work.description}</p> : null}
+                            {work.url ? (
+                              <a href={work.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-primary">
+                                Open work link
+                              </a>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No previous work added.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h5 className="mb-2 text-sm font-medium">Services</h5>
+                    {selectedVendor.services?.length ? (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {selectedVendor.services.map((service: SupplierService) => (
+                          <div key={service.id} className="rounded-md bg-muted/40 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <h6 className="text-sm font-medium">{service.name}</h6>
+                              {service.isPackage ? <Badge variant="secondary">Package</Badge> : null}
+                            </div>
+                            {service.description ? <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{service.description}</p> : null}
+                            {service.price !== null && service.price !== undefined ? (
+                              <p className="mt-2 text-sm font-medium">{service.price.toLocaleString()} SAR</p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No services added for this supplier yet.</p>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>

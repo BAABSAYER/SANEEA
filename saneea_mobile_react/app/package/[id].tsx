@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { createBooking, getPackageCustomization, getQuestionnaireItems, PackageCustomization, QuestionnaireItem } from "../../src/api/mobile";
+import { AttachmentPicker } from "../../src/components/attachment-picker";
 import { CityField, DateField, GuestCountField, TimeField } from "../../src/components/form-controls";
 import { MediaCarousel } from "../../src/components/media-carousel";
 import { Button, ErrorState, Field, LoadingState, PageHeader, Price, Screen, Section, Surface } from "../../src/components/ui";
@@ -51,11 +52,22 @@ export default function PackageScreen() {
 
   async function submit() {
     if (!token) {
-      router.push("/auth/login");
+      router.push({ pathname: "/auth/login", params: { returnTo: `/package/${packageId}` } });
       return;
     }
-    if (!customization || !draft.eventDate || !draft.eventTime || !draft.location || !draft.guestCount) {
-      Alert.alert(t("requiredField"));
+    const missing = [
+      !customization && t("packageDetails"),
+      !draft.eventDate && t("eventDate"),
+      !draft.eventTime && t("eventTime"),
+      !draft.location && t("location"),
+      !draft.guestCount && t("guests"),
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      Alert.alert(t("requiredField"), String(missing.join(", ")));
+      return;
+    }
+    if (!customization) {
+      Alert.alert(t("error"), t("packageDetails"));
       return;
     }
     setSubmitting(true);
@@ -127,6 +139,7 @@ export default function PackageScreen() {
             <GuestCountField label={t("guests")} value={draft.guestCount} onChange={(guestCount) => draft.setDetails({ guestCount })} />
             <Field label={t("budgetRange")} value={draft.budget} onChangeText={(budget) => draft.setDetails({ budget })} keyboardType="number-pad" />
             <Field label={t("notes")} value={draft.specialRequests} onChangeText={(specialRequests) => draft.setDetails({ specialRequests })} multiline />
+            <AttachmentPicker value={draft.clientAttachments} onChange={(clientAttachments) => draft.setDetails({ clientAttachments })} />
           </Section>
           <Section title={t("questionnaire")}>
             {questions.length === 0 ? <Text style={styles.itemMeta}>{t("noQuestions")}</Text> : null}
@@ -146,6 +159,15 @@ export default function PackageScreen() {
               <Price value={total} currency={t("sar")} />
             </View>
           </Surface>
+          <Section title={t("review")}>
+            <Surface>
+              <Text style={styles.reviewLine}>{t("packageDetails")}: {customization.package.name}</Text>
+              <Text style={styles.reviewLine}>{t("eventDate")}: {draft.eventDate || "-"}</Text>
+              <Text style={styles.reviewLine}>{t("eventTime")}: {draft.eventTime || "-"}</Text>
+              <Text style={styles.reviewLine}>{t("location")}: {draft.location || "-"}</Text>
+              <Text style={styles.reviewLine}>{t("guests")}: {draft.guestCount || "-"}</Text>
+            </Surface>
+          </Section>
         </>
       ) : null}
     </Screen>
@@ -167,4 +189,10 @@ const styles = StyleSheet.create({
   optionName: { color: colors.black, fontFamily: "Almarai-Bold", fontSize: 14 },
   optionNameActive: { color: colors.green },
   totalRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  reviewLine: {
+    color: colors.ink,
+    fontFamily: "Almarai-Regular",
+    fontSize: 13,
+    lineHeight: 22,
+  },
 });

@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ import { colors } from "../../src/theme/colors";
 type Mode = "login" | "signup" | "signupOtp" | "forgot" | "forgotOtp";
 
 export default function LoginScreen() {
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { t } = useTranslation();
   const setSession = useAuthStore((state) => state.setSession);
   const [mode, setMode] = useState<Mode>("login");
@@ -36,7 +37,7 @@ export default function LoginScreen() {
     await run(async () => {
       const data = await loginWithPhone({ phone, password });
       setSession(data.token, data.user);
-      router.replace("/home");
+      router.replace(returnTo || "/home");
     });
   }
 
@@ -52,7 +53,7 @@ export default function LoginScreen() {
     await run(async () => {
       const data = await verifySignupOtp({ phone, fullName, password, code: digits.join("") });
       setSession(data.token, data.user);
-      router.replace("/home");
+      router.replace(returnTo || "/home");
     });
   }
 
@@ -68,7 +69,7 @@ export default function LoginScreen() {
     await run(async () => {
       const data = await verifyPasswordResetOtp({ phone, password, code: digits.join("") });
       setSession(data.token, data.user);
-      router.replace("/home");
+      router.replace(returnTo || "/home");
     });
   }
 

@@ -8,8 +8,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
-  Camera, Upload, X, MapPin, Phone, Mail, 
-  Edit2, User, ChevronLeft, Save
+  Camera, X, MapPin, Phone, Mail, 
+  Edit2, User, ChevronLeft
 } from "lucide-react";
 import { 
   Form, 
@@ -22,34 +22,68 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EVENT_TYPES, SERVICE_CATEGORIES } from "@shared/schema";
 
 // Form validation schema
 const profileSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters" }),
   description: z.string().min(20, { message: "Description must be at least 20 characters" }),
   phone: z.string().optional(),
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.union([
+    z.string().email({ message: "Please enter a valid email address" }),
+    z.literal(""),
+  ]).optional(),
+  category: z.string().min(1, { message: "Category is required" }),
   address: z.string().optional(),
   city: z.string().optional(),
-  categories: z.array(z.string()).min(1, { message: "Select at least one category" }),
-  eventTypes: z.array(z.string()).min(1, { message: "Select at least one event type" }),
-  socialMedia: z.object({
-    instagram: z.string().optional(),
-    facebook: z.string().optional(),
-    website: z.string().optional(),
-  }),
+  priceRange: z.string().optional(),
+  photosText: z.string().optional(),
+  previousWorkText: z.string().optional(),
+  attachmentsText: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type VendorProfileData = ProfileFormValues & {
-  profileImage?: string | null;
+  photos?: string[] | null;
+  previousWork?: Array<{ title: string; description?: string | null; url?: string | null; imageUrl?: string | null }> | null;
+  attachments?: Array<{ url: string; fileName?: string | null; description?: string | null; contentType?: string | null }> | null;
 };
+
+function lines(value?: string | null) {
+  return String(value || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parsePreviousWork(value?: string | null) {
+  return lines(value).map((line) => {
+    const [title, url, imageUrl, description] = line.split("|").map((part) => part?.trim() || "");
+    return { title, url: url || null, imageUrl: imageUrl || null, description: description || null };
+  }).filter((item) => item.title);
+}
+
+function parseAttachments(value?: string | null) {
+  return lines(value).map((line) => {
+    const [url, fileName, description] = line.split("|").map((part) => part?.trim() || "");
+    return { url, fileName: fileName || null, description: description || null, contentType: null };
+  }).filter((item) => item.url);
+}
+
+function previousWorkToText(value: VendorProfileData["previousWork"]) {
+  return (value || [])
+    .map((item) => [item.title || "", item.url || "", item.imageUrl || "", item.description || ""].join(" | "))
+    .join("\n");
+}
+
+function attachmentsToText(value: VendorProfileData["attachments"]) {
+  return (value || [])
+    .map((item) => [item.url || "", item.fileName || "", item.description || ""].join(" | "))
+    .join("\n");
+}
 
 export default function VendorProfile() {
   const { user } = useAuth();
@@ -81,13 +115,11 @@ export default function VendorProfile() {
       email: "",
       address: "",
       city: "",
-      categories: [],
-      eventTypes: [],
-      socialMedia: {
-        instagram: "",
-        facebook: "",
-        website: "",
-      },
+      category: "",
+      priceRange: "",
+      photosText: "",
+      previousWorkText: "",
+      attachmentsText: "",
     }
   });
   
@@ -99,19 +131,17 @@ export default function VendorProfile() {
         description: vendorProfile.description || "",
         phone: vendorProfile.phone || "",
         email: vendorProfile.email || "",
+        category: vendorProfile.category || "",
         address: vendorProfile.address || "",
         city: vendorProfile.city || "",
-        categories: vendorProfile.categories || [],
-        eventTypes: vendorProfile.eventTypes || [],
-        socialMedia: {
-          instagram: vendorProfile.socialMedia?.instagram || "",
-          facebook: vendorProfile.socialMedia?.facebook || "",
-          website: vendorProfile.socialMedia?.website || "",
-        },
+        priceRange: vendorProfile.priceRange || "",
+        photosText: (vendorProfile.photos || []).join("\n"),
+        previousWorkText: previousWorkToText(vendorProfile.previousWork),
+        attachmentsText: attachmentsToText(vendorProfile.attachments),
       });
       
-      if (vendorProfile.profileImage) {
-        setProfileImage(vendorProfile.profileImage);
+      if (vendorProfile.photos?.[0]) {
+        setProfileImage(vendorProfile.photos[0]);
       }
     }
   }, [vendorProfile, form]);
@@ -119,7 +149,19 @@ export default function VendorProfile() {
   // Update profile mutation
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormValues & { profileImage?: string | null }) => {
-      return await apiRequest("PUT", "/api/vendor/profile", data);
+      return await apiRequest("PUT", "/api/vendor/profile", {
+        businessName: data.businessName,
+        description: data.description,
+        email: data.email || undefined,
+        phone: data.phone,
+        category: data.category,
+        address: data.address,
+        city: data.city,
+        priceRange: data.priceRange,
+        photos: [data.profileImage, ...lines(data.photosText)].filter(Boolean),
+        previousWork: parsePreviousWork(data.previousWorkText),
+        attachments: parseAttachments(data.attachmentsText),
+      });
     },
     onSuccess: () => {
       toast({
@@ -253,6 +295,36 @@ export default function VendorProfile() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <FormControl>
+                            <Input placeholder="venue, catering, photography..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="priceRange"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price Range</FormLabel>
+                          <FormControl>
+                            <Input placeholder="budget, moderate, premium..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -325,54 +397,52 @@ export default function VendorProfile() {
               
               <Separator />
               
-              {/* Social Media */}
+              {/* Portfolio */}
               <div>
-                <h3 className="font-medium text-neutral-800 mb-4">Social Media & Web</h3>
+                <h3 className="font-medium text-neutral-800 mb-4">Portfolio & Attachments</h3>
                 
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="socialMedia.website"
+                    name="photosText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website</FormLabel>
+                        <FormLabel>Photo URLs</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://yourwebsite.com" {...field} />
+                          <Textarea placeholder="One image URL per line" {...field} rows={3} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="socialMedia.instagram"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Instagram</FormLabel>
-                          <FormControl>
-                            <Input placeholder="@yourusername" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="socialMedia.facebook"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Facebook</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your Facebook page" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="previousWorkText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Previous Work</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Title | link URL | image URL | description" {...field} rows={4} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="attachmentsText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Attachments</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="File URL | file name | description" {...field} rows={4} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
               
@@ -410,7 +480,7 @@ export default function VendorProfile() {
                 {vendorProfile?.businessName || "Your Business"}
               </h2>
               <p className="text-neutral-600 text-center mb-4">
-                {vendorProfile?.categories?.map((cat: string) => cat).join(", ")}
+                {[vendorProfile?.category, vendorProfile?.priceRange].filter(Boolean).join(" · ") || "No category added"}
               </p>
               <Button
                 variant="outline"
@@ -431,6 +501,49 @@ export default function VendorProfile() {
               <p className="text-neutral-700">
                 {vendorProfile?.description || "No description added yet."}
               </p>
+            </div>
+            
+            <Separator className="mb-6" />
+
+            {/* Portfolio */}
+            <div className="mb-6">
+              <h3 className="font-medium text-neutral-800 mb-3">Previous Work</h3>
+              {vendorProfile?.previousWork?.length ? (
+                <div className="space-y-3">
+                  {vendorProfile.previousWork.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="rounded-lg border bg-white p-4">
+                      <h4 className="font-medium text-neutral-800">{item.title}</h4>
+                      {item.description ? <p className="text-sm text-neutral-600 mt-1">{item.description}</p> : null}
+                      {item.url ? <a className="text-sm text-primary mt-2 inline-block" href={item.url} target="_blank" rel="noreferrer">Open work link</a> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-neutral-600">No previous work added yet.</p>
+              )}
+            </div>
+
+            <Separator className="mb-6" />
+
+            <div className="mb-6">
+              <h3 className="font-medium text-neutral-800 mb-3">Attachments</h3>
+              {vendorProfile?.attachments?.length ? (
+                <div className="space-y-2">
+                  {vendorProfile.attachments.map((attachment, index) => (
+                    <a
+                      key={`${attachment.url}-${index}`}
+                      className="block rounded-lg border bg-white p-3 text-sm text-primary"
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {attachment.fileName || attachment.description || attachment.url}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-neutral-600">No attachments added yet.</p>
+              )}
             </div>
             
             <Separator className="mb-6" />
