@@ -40,9 +40,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Star, Plus, Edit, Trash2, Search, Filter } from "lucide-react";
+import { Star, Plus, Edit, Trash2, Search, Filter, Upload, Loader2 } from "lucide-react";
 import { SERVICE_CATEGORIES, Vendor } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, authHeaders, queryClient } from "@/lib/queryClient";
 
 type SupplierService = {
   id: number;
@@ -60,6 +60,8 @@ type SupplierDetails = Vendor & {
   previousWork?: Array<{ title: string; description?: string | null; url?: string | null; imageUrl?: string | null }>;
   attachments?: Array<{ url: string; fileName?: string | null; description?: string | null; contentType?: string | null }>;
 };
+
+type SupplierAttachment = NonNullable<SupplierDetails["attachments"]>[number];
 
 async function readOptionalJson(res: Response) {
   const text = await res.text();
@@ -80,23 +82,48 @@ function parsePreviousWork(value: FormDataEntryValue | null) {
   }).filter((item) => item.title);
 }
 
-function parseAttachments(value: FormDataEntryValue | null) {
-  return lines(value).map((line) => {
-    const [url, fileName, description] = line.split("|").map((part) => part?.trim() || "");
-    return { url, fileName: fileName || null, description: description || null, contentType: null };
-  }).filter((item) => item.url);
-}
-
 function previousWorkToText(value: any[] | null | undefined) {
   return (value || [])
     .map((item) => [item.title || "", item.url || "", item.imageUrl || "", item.description || ""].join(" | "))
     .join("\n");
 }
 
-function attachmentsToText(value: any[] | null | undefined) {
-  return (value || [])
-    .map((item) => [item.url || "", item.fileName || "", item.description || ""].join(" | "))
-    .join("\n");
+async function uploadSupplierAttachment(file: File, folder: string) {
+  const intentRes = await fetch("/api/admin/media/upload-intent", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type || "application/octet-stream",
+      folder,
+    }),
+  });
+  if (!intentRes.ok) {
+    const error = await intentRes.json().catch(() => null);
+    throw new Error(error?.message || "Failed to prepare S3 upload");
+  }
+
+  const intent = await intentRes.json();
+  if (!intent.uploadUrl) {
+    throw new Error("S3 upload is not configured. Set S3_BUCKET and AWS_REGION on the backend.");
+  }
+
+  const uploadRes = await fetch(intent.uploadUrl, {
+    method: "PUT",
+    headers: intent.headers || { "Content-Type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  if (!uploadRes.ok) {
+    const errorText = await uploadRes.text().catch(() => "");
+    throw new Error(errorText || `Failed to upload attachment to S3 (${uploadRes.status})`);
+  }
+
+  return {
+    url: intent.publicUrl as string,
+    fileName: file.name,
+    contentType: file.type || null,
+    description: null,
+  };
 }
 
 export default function AdminVendors() {
@@ -108,6 +135,8 @@ export default function AdminVendors() {
   const [isViewingVendor, setIsViewingVendor] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [activeView, setActiveView] = useState<'vendors' | 'services'>('vendors');
+  const [newVendorAttachments, setNewVendorAttachments] = useState<any[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState<"new" | "edit" | null>(null);
   
   // Fetch vendors
   const { data: vendors = [], isLoading: isLoadingVendors } = useQuery<Vendor[]>({
@@ -157,6 +186,7 @@ export default function AdminVendors() {
         description: t("adminVendors.vendorCreatedDescription"),
       });
       setIsAddingVendor(false);
+      setNewVendorAttachments([]);
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
     },
     onError: (error) => {
@@ -227,7 +257,7 @@ export default function AdminVendors() {
       priceRange: formData.get("priceRange") as string,
       photos: lines(formData.get("photos")),
       previousWork: parsePreviousWork(formData.get("previousWork")),
-      attachments: parseAttachments(formData.get("attachments")),
+      attachments: newVendorAttachments,
     };
     
     createVendorMutation.mutate(vendorData);
@@ -249,6 +279,40 @@ export default function AdminVendors() {
     if (!selectedVendor) return;
     updateVendorMutation.mutate(selectedVendor);
   };
+
+  async function handleSupplierAttachmentUpload(files: FileList | null, mode: "new" | "edit") {
+    if (!files?.length) return;
+    setUploadingAttachments(mode);
+    try {
+      const uploaded: SupplierAttachment[] = [];
+      for (const file of Array.from(files)) {
+        const supplierSlug = mode === "edit" && selectedVendor?.id ? `supplier-${selectedVendor.id}` : "new-supplier";
+        uploaded.push(await uploadSupplierAttachment(file, `saneea/suppliers/${supplierSlug}/attachments`));
+      }
+
+      if (mode === "new") {
+        setNewVendorAttachments((current) => [...current, ...uploaded]);
+      } else {
+        setSelectedVendor((current: any) => current ? {
+          ...current,
+          attachments: [...(current.attachments || []), ...uploaded],
+        } : current);
+      }
+
+      toast({
+        title: "Attachments uploaded",
+        description: `${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to S3.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Could not upload attachment",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAttachments(null);
+    }
+  }
   
   const filteredVendors = vendors.filter((vendor: any) => {
     const matchesSearch = !searchTerm || 
@@ -391,8 +455,54 @@ export default function AdminVendors() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="attachments">Attachments</Label>
-                        <Textarea id="attachments" name="attachments" placeholder="File URL | file name | description" />
+                        <Label>Supplier attachments</Label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Input
+                            id="newSupplierAttachments"
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(event) => handleSupplierAttachmentUpload(event.target.files, "new")}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={uploadingAttachments !== null}
+                            onClick={() => document.getElementById("newSupplierAttachments")?.click()}
+                          >
+                            {uploadingAttachments === "new" ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            Upload attachments
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            Files are uploaded to S3 before saving the supplier.
+                          </span>
+                        </div>
+                        {newVendorAttachments.length > 0 ? (
+                          <div className="rounded-md border p-3">
+                            <p className="text-sm font-medium">Uploaded files</p>
+                            <div className="mt-2 space-y-1">
+                              {newVendorAttachments.map((attachment, index) => (
+                                <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                                  <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
+                                    {attachment.fileName || attachment.url}
+                                  </a>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setNewVendorAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       
                       <DialogFooter>
@@ -695,13 +805,57 @@ export default function AdminVendors() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editAttachments">Attachments</Label>
-                  <Textarea
-                    id="editAttachments"
-                    value={attachmentsToText(selectedVendor.attachments)}
-                    placeholder="File URL | file name | description"
-                    onChange={(e) => setSelectedVendor({ ...selectedVendor, attachments: parseAttachments(e.target.value) })}
-                  />
+                  <Label>Supplier attachments</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      id="editSupplierAttachments"
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(event) => handleSupplierAttachmentUpload(event.target.files, "edit")}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploadingAttachments !== null}
+                      onClick={() => document.getElementById("editSupplierAttachments")?.click()}
+                    >
+                      {uploadingAttachments === "edit" ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      Upload attachments
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Upload files to S3, then save this supplier.
+                    </span>
+                  </div>
+                  {selectedVendor.attachments?.length ? (
+                    <div className="rounded-md border p-3">
+                      <p className="text-sm font-medium">Uploaded files</p>
+                      <div className="mt-2 space-y-1">
+                        {selectedVendor.attachments.map((attachment: any, index: number) => (
+                          <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                            <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
+                              {attachment.fileName || attachment.description || attachment.url}
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedVendor({
+                                ...selectedVendor,
+                                attachments: (selectedVendor.attachments || []).filter((_: any, itemIndex: number) => itemIndex !== index),
+                              })}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-md border p-3">

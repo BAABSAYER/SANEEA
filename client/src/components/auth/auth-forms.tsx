@@ -13,7 +13,7 @@ import { AlertCircle, X } from "lucide-react";
 
 // Login form validation schema
 const loginSchema = z.object({
-  username: z.string().min(1, "Username or email is required"),
+  username: z.string().min(1, "Phone number is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -67,10 +67,12 @@ export function LoginForm() {
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <Label htmlFor="username">Email or Username</Label>
+          <Label htmlFor="username">Phone Number</Label>
           <Input
             id="username"
-            placeholder="your@email.com or username"
+            type="tel"
+            inputMode="tel"
+            placeholder="05xxxxxxxx"
             {...register("username")}
             className={errors.username ? "border-red-500" : ""}
           />

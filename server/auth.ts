@@ -642,12 +642,24 @@ export function setupAuth(app: Express) {
   app.post("/api/login", async (req, res, next) => {
     try {
       const { username, password } = req.body;
-      const isEmail = String(username || "").includes("@");
-      const user = isEmail
-        ? await storage.getUserByEmail(username)
-        : await storage.getUserByUsername(username);
+      const loginId = String(username || "").trim();
+      let user: SelectUser | undefined;
 
-      if (!user) return res.status(401).json({ message: "Incorrect username or email" });
+      try {
+        const phone = normalizeSaudiPhone(loginId);
+        user = await getUserByAnyPhoneFormat(phone);
+      } catch {
+        user = await getUserByAnyPhoneFormat(loginId);
+      }
+
+      if (!user) {
+        const isEmail = loginId.includes("@");
+        user = isEmail
+          ? await storage.getUserByEmail(loginId)
+          : await storage.getUserByUsername(loginId);
+      }
+
+      if (!user) return res.status(401).json({ message: "Incorrect phone number, username, or email" });
 
       const isValid = await storage.verifyPassword(password, user.password);
       if (!isValid) return res.status(401).json({ message: "Incorrect password" });
