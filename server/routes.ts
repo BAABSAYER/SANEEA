@@ -2989,15 +2989,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'You do not have permission to manage admin users' });
       }
       
-      const { username, password, email, fullName, phone, permissions = [] } = req.body;
+      const {
+        username: rawUsername,
+        password,
+        email: rawEmail,
+        fullName,
+        phone: rawPhone,
+        permissions = [],
+      } = req.body;
+
+      const normalizedPhone = normalizeSaudiPhone(rawPhone);
+      const email = typeof rawEmail === "string" && rawEmail.trim() ? rawEmail.trim() : null;
+
+      if (!normalizedPhone || !password) {
+        return res.status(400).json({ message: 'Phone number and password are required' });
+      }
+
+      for (const candidate of phoneLookupCandidates(normalizedPhone)) {
+        const existingByPhone = await storage.getUserByPhone(candidate);
+        if (existingByPhone) {
+          return res.status(409).json({ message: 'A user with this phone number already exists' });
+        }
+      }
+
+      if (email) {
+        const existingByEmail = await storage.getUserByEmail(email);
+        if (existingByEmail) {
+          return res.status(409).json({ message: 'A user with this email already exists' });
+        }
+      }
+
+      const digits = normalizedPhone.replace(/\D/g, "");
+      const requestedUsername = typeof rawUsername === "string" ? rawUsername.trim() : "";
+      const usernameBase = (requestedUsername || `admin_${digits}`).replace(/[^a-zA-Z0-9_]/g, "_") || `admin_${Date.now()}`;
+      let username = usernameBase;
+      let suffix = 1;
+      while (await storage.getUserByUsername(username)) {
+        username = `${usernameBase}_${suffix++}`;
+      }
       
       // Create the new admin user
       const newAdmin = await storage.createUser({
         username,
         password,
-        email,
+        email: email || `${username}_${randomUUID().slice(0, 8)}@admins.saneea.local`,
         fullName,
-        phone,
+        phone: normalizedPhone,
         userType: USER_TYPES.ADMIN
       });
       
@@ -3355,19 +3392,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.userType === 'admin') {
         const input = vendorProfileSchema.parse(req.body);
         const email = String(input.email || "").trim();
-        const phone = input.phone ? String(input.phone).trim() : null;
+        const normalizedPhone = normalizeSaudiPhone(input.phone);
         const businessName = input.businessName;
 
-        if (!businessName || !input.category) {
-          return res.status(400).json({ message: 'Business name and category are required' });
+        if (!businessName || !input.category || !normalizedPhone) {
+          return res.status(400).json({ message: 'Business name, category, and phone are required' });
         }
 
-        let user = email ? await storage.getUserByEmail(email) : undefined;
+        let user: User | undefined;
+        for (const candidate of phoneLookupCandidates(normalizedPhone)) {
+          user = await storage.getUserByPhone(candidate);
+          if (user) break;
+        }
+        if (!user && email) {
+          user = await storage.getUserByEmail(email);
+        }
         const temporaryPassword = `Vendor-${Math.random().toString(36).slice(2, 10)}`;
         let createdVendorUser = false;
 
         if (!user) {
-          const usernameSource = email ? email.split("@")[0] : businessName;
+          const usernameSource = normalizedPhone.replace(/\D/g, "") || email || businessName;
           const usernameBase = usernameSource.replace(/[^a-zA-Z0-9_]/g, "_") || `vendor_${Date.now()}`;
           let username = usernameBase;
           let suffix = 1;
@@ -3381,12 +3425,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             password: temporaryPassword,
             email: userEmail,
             fullName: businessName,
-            phone,
+            phone: normalizedPhone,
             userType: USER_TYPES.VENDOR,
           } as any);
           createdVendorUser = true;
         } else if (user.userType !== USER_TYPES.VENDOR) {
-          user = await storage.updateUser(user.id, { userType: USER_TYPES.VENDOR, fullName: businessName, phone: phone || user.phone }) as User;
+          user = await storage.updateUser(user.id, { userType: USER_TYPES.VENDOR, fullName: businessName, phone: normalizedPhone || user.phone }) as User;
+        } else if (user.phone !== normalizedPhone || user.fullName !== businessName) {
+          user = await storage.updateUser(user.id, { fullName: businessName, phone: normalizedPhone }) as User;
         }
 
         let vendor = await storage.getVendorByUserId(user.id);

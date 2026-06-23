@@ -20,6 +20,7 @@ import AdminEvents from "./pages/admin/events";
 import AdminBundles from "./pages/admin/bundles";
 import AdminSchedule from "./pages/admin/schedule";
 import AdminVendors from "./pages/admin/vendors";
+import AdminVendorDetails from "./pages/admin/vendor-details";
 import AdminAnalyticsPage from "./pages/admin-analytics";
 
 import Messages from "./pages/messages";
@@ -70,6 +71,7 @@ function Router() {
       <AdminRoute path="/admin/schedule" component={AdminSchedule} />
       <AdminRoute path="/admin/events" component={AdminEvents} />
       <AdminRoute path="/admin/bundles" component={AdminBundles} />
+      <AdminRoute path="/admin/vendors/:id" component={AdminVendorDetails} />
       <AdminRoute path="/admin/vendors" component={AdminVendors} />
       <AdminRoute path="/admin/users" component={AdminUsers} />
       <AdminRoute path="/admin/users-list" component={AdminUsersList} />

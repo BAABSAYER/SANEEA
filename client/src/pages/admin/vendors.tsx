@@ -1,56 +1,37 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
+import { Filter, Loader2, Plus, Search, Star, Trash2, Upload } from "lucide-react";
 import { AdminLayout } from "@/components/admin-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Star, Plus, Edit, Trash2, Search, Filter, Upload, Loader2 } from "lucide-react";
-import { SERVICE_CATEGORIES, Vendor } from "@shared/schema";
 import { apiRequest, authHeaders, queryClient } from "@/lib/queryClient";
+import { SERVICE_CATEGORIES, Vendor } from "@shared/schema";
 
 type SupplierService = {
   id: number;
   name: string;
   description?: string | null;
   price?: number | null;
-  duration?: number | null;
   isPackage?: boolean | null;
+};
+
+type SupplierAttachment = {
+  url: string;
+  fileName?: string | null;
+  description?: string | null;
+  contentType?: string | null;
 };
 
 type SupplierDetails = Vendor & {
@@ -58,10 +39,8 @@ type SupplierDetails = Vendor & {
   phone?: string | null;
   services?: SupplierService[];
   previousWork?: Array<{ title: string; description?: string | null; url?: string | null; imageUrl?: string | null }>;
-  attachments?: Array<{ url: string; fileName?: string | null; description?: string | null; contentType?: string | null }>;
+  attachments?: SupplierAttachment[];
 };
-
-type SupplierAttachment = NonNullable<SupplierDetails["attachments"]>[number];
 
 async function readOptionalJson(res: Response) {
   const text = await res.text();
@@ -76,19 +55,15 @@ function lines(value: FormDataEntryValue | null) {
 }
 
 function parsePreviousWork(value: FormDataEntryValue | null) {
-  return lines(value).map((line) => {
-    const [title, url, imageUrl, description] = line.split("|").map((part) => part?.trim() || "");
-    return { title, url: url || null, imageUrl: imageUrl || null, description: description || null };
-  }).filter((item) => item.title);
+  return lines(value)
+    .map((line) => {
+      const [title, url, imageUrl, description] = line.split("|").map((part) => part?.trim() || "");
+      return { title, url: url || null, imageUrl: imageUrl || null, description: description || null };
+    })
+    .filter((item) => item.title);
 }
 
-function previousWorkToText(value: any[] | null | undefined) {
-  return (value || [])
-    .map((item) => [item.title || "", item.url || "", item.imageUrl || "", item.description || ""].join(" | "))
-    .join("\n");
-}
-
-async function uploadSupplierAttachment(file: File, folder: string) {
+async function uploadSupplierAttachment(file: File, folder: string): Promise<SupplierAttachment> {
   const intentRes = await fetch("/api/admin/media/upload-intent", {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
@@ -98,6 +73,7 @@ async function uploadSupplierAttachment(file: File, folder: string) {
       folder,
     }),
   });
+
   if (!intentRes.ok) {
     const error = await intentRes.json().catch(() => null);
     throw new Error(error?.message || "Failed to prepare S3 upload");
@@ -113,6 +89,7 @@ async function uploadSupplierAttachment(file: File, folder: string) {
     headers: intent.headers || { "Content-Type": file.type || "application/octet-stream" },
     body: file,
   });
+
   if (!uploadRes.ok) {
     const errorText = await uploadRes.text().catch(() => "");
     throw new Error(errorText || `Failed to upload attachment to S3 (${uploadRes.status})`);
@@ -129,16 +106,14 @@ async function uploadSupplierAttachment(file: File, folder: string) {
 export default function AdminVendors() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [isAddingVendor, setIsAddingVendor] = useState(false);
-  const [isViewingVendor, setIsViewingVendor] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<any>(null);
-  const [activeView, setActiveView] = useState<'vendors' | 'services'>('vendors');
-  const [newVendorAttachments, setNewVendorAttachments] = useState<any[]>([]);
-  const [uploadingAttachments, setUploadingAttachments] = useState<"new" | "edit" | null>(null);
-  
-  // Fetch vendors
+  const [activeView, setActiveView] = useState<"vendors" | "services">("vendors");
+  const [newVendorAttachments, setNewVendorAttachments] = useState<SupplierAttachment[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+
   const { data: vendors = [], isLoading: isLoadingVendors } = useQuery<Vendor[]>({
     queryKey: ["/api/vendors"],
   });
@@ -157,24 +132,6 @@ export default function AdminVendors() {
     },
   });
 
-  const { data: selectedVendorDetails, isLoading: isLoadingSelectedVendorDetails } = useQuery<SupplierDetails>({
-    queryKey: ["/api/vendors", selectedVendor?.id],
-    enabled: isViewingVendor && Boolean(selectedVendor?.id),
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/vendors/${selectedVendor.id}`);
-      return await res.json();
-    },
-  });
-
-  useEffect(() => {
-    if (selectedVendorDetails) {
-      setSelectedVendor((current: any) => current?.id === selectedVendorDetails.id
-        ? { ...current, ...selectedVendorDetails }
-        : current);
-    }
-  }, [selectedVendorDetails]);
-  
-  // Create vendor mutation
   const createVendorMutation = useMutation({
     mutationFn: async (vendorData: any) => {
       const res = await apiRequest("POST", "/api/vendors", vendorData);
@@ -192,13 +149,12 @@ export default function AdminVendors() {
     onError: (error) => {
       toast({
         title: t("adminVendors.vendorCreateError"),
-        description: error.message,
+        description: error instanceof Error ? error.message : t("common.error"),
         variant: "destructive",
       });
     },
   });
-  
-  // Delete vendor mutation
+
   const deleteVendorMutation = useMutation({
     mutationFn: async (vendorId: number) => {
       const res = await apiRequest("DELETE", `/api/vendors/${vendorId}`);
@@ -214,44 +170,27 @@ export default function AdminVendors() {
     onError: (error) => {
       toast({
         title: t("adminVendors.vendorDeleteError"),
-        description: error.message,
+        description: error instanceof Error ? error.message : t("common.error"),
         variant: "destructive",
       });
     },
   });
 
-  const updateVendorMutation = useMutation({
-    mutationFn: async (vendorData: any) => {
-      const res = await apiRequest("PATCH", `/api/vendors/${vendorData.id}`, vendorData);
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: t("adminVendors.vendorUpdated"),
-        description: t("adminVendors.vendorUpdatedDescription"),
-      });
-      setIsViewingVendor(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-    },
-    onError: (error) => {
-      toast({
-        title: t("adminVendors.vendorUpdateError"),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+  const filteredVendors = vendors.filter((vendor: any) => {
+    const matchesSearch = !searchTerm || vendor.businessName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !categoryFilter || categoryFilter === "all" || vendor.category === categoryFilter;
+    return matchesSearch && matchesCategory;
   });
-  
-  const handleAddVendor = (e: React.FormEvent<HTMLFormElement>) => {
+
+  function handleAddVendor(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
     const vendorData = {
       businessName: formData.get("businessName") as string,
       category: formData.get("category") as string,
       description: formData.get("description") as string,
-      email: String(formData.get("email") || "").trim() || undefined,
       phone: formData.get("phone") as string,
+      email: String(formData.get("email") || "").trim() || undefined,
       address: formData.get("address") as string,
       city: formData.get("city") as string,
       priceRange: formData.get("priceRange") as string,
@@ -259,99 +198,70 @@ export default function AdminVendors() {
       previousWork: parsePreviousWork(formData.get("previousWork")),
       attachments: newVendorAttachments,
     };
-    
+
     createVendorMutation.mutate(vendorData);
-  };
-  
-  const handleViewVendor = (vendor: any) => {
-    setSelectedVendor({ ...vendor });
-    setIsViewingVendor(true);
-  };
-  
-  const handleDeleteVendor = (vendorId: number) => {
+  }
+
+  function openVendor(vendorId: number) {
+    navigate(`/admin/vendors/${vendorId}`);
+  }
+
+  function handleDeleteVendor(vendorId: number) {
     if (window.confirm(t("adminVendors.confirmDelete"))) {
       deleteVendorMutation.mutate(vendorId);
     }
-  };
+  }
 
-  const handleUpdateVendor = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedVendor) return;
-    updateVendorMutation.mutate(selectedVendor);
-  };
-
-  async function handleSupplierAttachmentUpload(files: FileList | null, mode: "new" | "edit") {
+  async function handleSupplierAttachmentUpload(files: FileList | null) {
     if (!files?.length) return;
-    setUploadingAttachments(mode);
+    setUploadingAttachments(true);
     try {
       const uploaded: SupplierAttachment[] = [];
       for (const file of Array.from(files)) {
-        const supplierSlug = mode === "edit" && selectedVendor?.id ? `supplier-${selectedVendor.id}` : "new-supplier";
-        uploaded.push(await uploadSupplierAttachment(file, `saneea/suppliers/${supplierSlug}/attachments`));
+        uploaded.push(await uploadSupplierAttachment(file, "saneea/suppliers/new-supplier/attachments"));
       }
 
-      if (mode === "new") {
-        setNewVendorAttachments((current) => [...current, ...uploaded]);
-      } else {
-        setSelectedVendor((current: any) => current ? {
-          ...current,
-          attachments: [...(current.attachments || []), ...uploaded],
-        } : current);
-      }
-
+      setNewVendorAttachments((current) => [...current, ...uploaded]);
       toast({
-        title: "Attachments uploaded",
-        description: `${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to S3.`,
+        title: t("adminVendors.attachmentsUploaded"),
+        description: t("adminVendors.attachmentsUploadedDescription", { count: uploaded.length }),
       });
     } catch (error) {
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Could not upload attachment",
+        title: t("adminVendors.uploadFailed"),
+        description: error instanceof Error ? error.message : t("adminVendors.uploadFailedDescription"),
         variant: "destructive",
       });
     } finally {
-      setUploadingAttachments(null);
+      setUploadingAttachments(false);
     }
   }
-  
-  const filteredVendors = vendors.filter((vendor: any) => {
-    const matchesSearch = !searchTerm || 
-      vendor.businessName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !categoryFilter || categoryFilter === "all" || vendor.category === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <AdminLayout title={t("adminVendors.title")}>
       <div className="space-y-6">
-        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'vendors' | 'services')} className="space-y-4">
+        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as "vendors" | "services")} className="space-y-4">
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="vendors">{t("navigation.vendors")}</TabsTrigger>
               <TabsTrigger value="services">{t("navigation.services")}</TabsTrigger>
             </TabsList>
           </div>
-          
+
           <TabsContent value="vendors" className="space-y-4">
-            {/* Search & Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t("adminVendors.searchPlaceholder")}
                   className="pl-8"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(event) => setSearchTerm(event.target.value)}
                 />
               </div>
-              
+
               <div className="flex gap-2 items-center">
-                <Select 
-                  value={categoryFilter || ""} 
-                  onValueChange={(value) => setCategoryFilter(value || null)}
-                >
+                <Select value={categoryFilter || ""} onValueChange={(value) => setCategoryFilter(value || null)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder={t("adminVendors.filterByCategory")} />
                   </SelectTrigger>
@@ -362,7 +272,7 @@ export default function AdminVendors() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 <Dialog open={isAddingVendor} onOpenChange={setIsAddingVendor}>
                   <DialogTrigger asChild>
                     <Button>
@@ -370,21 +280,18 @@ export default function AdminVendors() {
                       {t("adminVendors.addVendor")}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[550px]">
+                  <DialogContent className="sm:max-w-[560px]">
                     <DialogHeader>
                       <DialogTitle>{t("adminVendors.addNewVendor")}</DialogTitle>
-                      <DialogDescription>
-                        {t("adminVendors.createVendorDescription")}
-                      </DialogDescription>
+                      <DialogDescription>{t("adminVendors.createVendorDescription")}</DialogDescription>
                     </DialogHeader>
-                    
+
                     <form onSubmit={handleAddVendor} className="space-y-4 pt-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="businessName">{t("vendorProfile.businessName")}</Label>
                           <Input id="businessName" name="businessName" required />
                         </div>
-                        
                         <div className="space-y-2">
                           <Label htmlFor="category">{t("vendors.category")}</Label>
                           <Select name="category" required>
@@ -399,36 +306,34 @@ export default function AdminVendors() {
                           </Select>
                         </div>
                       </div>
-                      
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">{t("common.phone")}</Label>
+                          <Input id="phone" name="phone" type="tel" placeholder="05xxxxxxxx" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">{t("common.email")} ({t("common.optional")})</Label>
+                          <Input id="email" name="email" type="email" />
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="description">{t("common.description")}</Label>
                         <Textarea id="description" name="description" />
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="email">{t("common.email")}</Label>
-                          <Input id="email" name="email" type="email" />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">{t("common.phone")}</Label>
-                          <Input id="phone" name="phone" />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
+
+                      <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="address">{t("common.address")}</Label>
                           <Input id="address" name="address" />
                         </div>
-                        
                         <div className="space-y-2">
                           <Label htmlFor="city">{t("vendorProfile.city")}</Label>
                           <Input id="city" name="city" />
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="priceRange">{t("vendorProfile.priceRange")}</Label>
                         <Select name="priceRange">
@@ -445,50 +350,44 @@ export default function AdminVendors() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="photos">Supplier photos</Label>
-                        <Textarea id="photos" name="photos" placeholder="One image URL per line" />
+                        <Label htmlFor="photos">{t("adminVendors.supplierPhotos")}</Label>
+                        <Textarea id="photos" name="photos" placeholder={t("adminVendors.photosPlaceholder")} />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="previousWork">Previous work</Label>
-                        <Textarea id="previousWork" name="previousWork" placeholder="Title | link URL | image URL | description" />
+                        <Label htmlFor="previousWork">{t("adminVendors.previousWork")}</Label>
+                        <Textarea id="previousWork" name="previousWork" placeholder={t("adminVendors.previousWorkPlaceholder")} />
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Supplier attachments</Label>
+                        <Label>{t("adminVendors.supplierAttachments")}</Label>
                         <div className="flex flex-wrap items-center gap-2">
                           <Input
                             id="newSupplierAttachments"
                             type="file"
                             multiple
                             className="hidden"
-                            onChange={(event) => handleSupplierAttachmentUpload(event.target.files, "new")}
+                            onChange={(event) => handleSupplierAttachmentUpload(event.target.files)}
                           />
                           <Button
                             type="button"
                             variant="outline"
-                            disabled={uploadingAttachments !== null}
+                            disabled={uploadingAttachments}
                             onClick={() => document.getElementById("newSupplierAttachments")?.click()}
                           >
-                            {uploadingAttachments === "new" ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                              <Upload className="h-4 w-4 mr-2" />
-                            )}
-                            Upload attachments
+                            {uploadingAttachments ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                            {t("adminVendors.uploadAttachments")}
                           </Button>
-                          <span className="text-xs text-muted-foreground">
-                            Files are uploaded to S3 before saving the supplier.
-                          </span>
+                          <span className="text-xs text-muted-foreground">{t("adminVendors.filesUploadedBeforeSaving")}</span>
                         </div>
                         {newVendorAttachments.length > 0 ? (
                           <div className="rounded-md border p-3">
-                            <p className="text-sm font-medium">Uploaded files</p>
+                            <p className="text-sm font-medium">{t("adminVendors.uploadedFiles")}</p>
                             <div className="mt-2 space-y-1">
                               {newVendorAttachments.map((attachment, index) => (
                                 <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
                                   <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
-                                    {attachment.fileName || attachment.url}
+                                    {attachment.fileName || attachment.description || attachment.url}
                                   </a>
                                   <Button
                                     type="button"
@@ -496,7 +395,7 @@ export default function AdminVendors() {
                                     size="sm"
                                     onClick={() => setNewVendorAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))}
                                   >
-                                    Remove
+                                    {t("common.remove")}
                                   </Button>
                                 </div>
                               ))}
@@ -504,19 +403,9 @@ export default function AdminVendors() {
                           </div>
                         ) : null}
                       </div>
-                      
+
                       <DialogFooter>
-                        <Button 
-                          variant="outline" 
-                          type="button" 
-                          onClick={() => setIsAddingVendor(false)}
-                        >
-                          {t("common.cancel")}
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={createVendorMutation.isPending}
-                        >
+                        <Button type="submit" disabled={createVendorMutation.isPending || uploadingAttachments}>
                           {createVendorMutation.isPending ? t("adminVendors.creating") : t("adminVendors.createVendor")}
                         </Button>
                       </DialogFooter>
@@ -525,19 +414,15 @@ export default function AdminVendors() {
                 </Dialog>
               </div>
             </div>
-            
-            {/* Vendors Table */}
+
             <Card>
               <CardHeader>
                 <CardTitle>{t("navigation.vendors")}</CardTitle>
-                <CardDescription>
-                  {t("adminVendors.manageProviders")}
-                </CardDescription>
+                <CardDescription>{t("adminVendors.manageProviders")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingVendors ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-4 w-full" />
+                  <div className="space-y-2">
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
@@ -548,48 +433,29 @@ export default function AdminVendors() {
                       <TableRow>
                         <TableHead>{t("vendorProfile.businessName")}</TableHead>
                         <TableHead>{t("vendors.category")}</TableHead>
-                        <TableHead>{t("common.location")}</TableHead>
+                        <TableHead>{t("common.phone")}</TableHead>
                         <TableHead>{t("vendors.rating")}</TableHead>
-                        <TableHead>{t("vendorProfile.priceRange")}</TableHead>
-                        <TableHead className="text-right">{t("common.actions")}</TableHead>
+                        <TableHead>{t("common.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredVendors.map((vendor: any) => (
                         <TableRow key={vendor.id}>
                           <TableCell className="font-medium">{vendor.businessName}</TableCell>
-                          <TableCell>
-                            {SERVICE_CATEGORIES[vendor.category as keyof typeof SERVICE_CATEGORIES] || vendor.category}
-                          </TableCell>
-                          <TableCell>{vendor.city || t("adminVendors.notAvailable")}</TableCell>
+                          <TableCell>{SERVICE_CATEGORIES[vendor.category as keyof typeof SERVICE_CATEGORIES] || vendor.category}</TableCell>
+                          <TableCell>{vendor.phone || t("adminVendors.notAvailable")}</TableCell>
                           <TableCell>
                             <div className="flex items-center">
                               <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                              <span>{vendor.rating ? vendor.rating.toFixed(1) : t("adminVendors.notAvailable")}</span>
+                              <span>{vendor.rating ? vendor.rating.toFixed(1) : t("adminVendors.noRatings")}</span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            {vendor.priceRange && (
-                              <Badge variant="outline" className="capitalize">
-                                {vendor.priceRange}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleViewVendor(vendor)}
-                              >
-                                <Edit className="h-4 w-4" />
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => openVendor(vendor.id)}>
+                                {t("common.viewDetails")}
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-destructive hover:text-destructive" 
-                                onClick={() => handleDeleteVendor(vendor.id)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteVendor(vendor.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -599,24 +465,17 @@ export default function AdminVendors() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground">{t("adminVendors.noVendors")}</p>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="rounded-full bg-primary/10 p-3 mb-4">
+                      <Filter className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">{t("adminVendors.noVendors")}</h3>
                     {searchTerm || categoryFilter ? (
-                      <Button 
-                        variant="link" 
-                        onClick={() => {
-                          setSearchTerm("");
-                          setCategoryFilter(null);
-                        }}
-                      >
+                      <Button variant="link" onClick={() => { setSearchTerm(""); setCategoryFilter(null); }}>
                         {t("adminVendors.clearFilters")}
                       </Button>
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        className="mt-2" 
-                        onClick={() => setIsAddingVendor(true)}
-                      >
+                      <Button variant="outline" className="mt-2" onClick={() => setIsAddingVendor(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         {t("adminVendors.addVendor")}
                       </Button>
@@ -626,14 +485,12 @@ export default function AdminVendors() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="services" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>{t("navigation.services")}</CardTitle>
-                <CardDescription>
-                  Services are managed inside each supplier profile.
-                </CardDescription>
+                <CardDescription>{t("adminVendors.servicesManagedInSupplierProfile")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingServiceSuppliers ? (
@@ -650,11 +507,14 @@ export default function AdminVendors() {
                           <div>
                             <h3 className="font-medium">{supplier.businessName}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {supplier.services?.length || 0} services · {supplier.previousWork?.length || 0} previous work items
+                              {t("adminVendors.supplierStats", {
+                                services: supplier.services?.length || 0,
+                                previousWork: supplier.previousWork?.length || 0,
+                              })}
                             </p>
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => handleViewVendor(supplier)}>
-                            Open supplier
+                          <Button variant="outline" size="sm" onClick={() => openVendor(supplier.id)}>
+                            {t("adminVendors.openSupplier")}
                           </Button>
                         </div>
                         {supplier.services?.length ? (
@@ -664,20 +524,18 @@ export default function AdminVendors() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <h4 className="text-sm font-medium">{service.name}</h4>
-                                    {service.description ? (
-                                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{service.description}</p>
-                                    ) : null}
+                                    {service.description ? <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{service.description}</p> : null}
                                   </div>
-                                  {service.isPackage ? <Badge variant="secondary">Package</Badge> : null}
+                                  {service.isPackage ? <Badge variant="secondary">{t("adminVendors.package")}</Badge> : null}
                                 </div>
                                 {service.price !== null && service.price !== undefined ? (
-                                  <p className="mt-2 text-sm font-medium">{service.price.toLocaleString()} SAR</p>
+                                  <p className="mt-2 text-sm font-medium">{service.price.toLocaleString()} {t("common.sar")}</p>
                                 ) : null}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="mt-4 text-sm text-muted-foreground">No services added for this supplier yet.</p>
+                          <p className="mt-4 text-sm text-muted-foreground">{t("adminVendors.noSupplierServices")}</p>
                         )}
                       </div>
                     ))}
@@ -687,281 +545,14 @@ export default function AdminVendors() {
                     <div className="rounded-full bg-primary/10 p-3 mb-4">
                       <Filter className="h-6 w-6 text-primary" />
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No supplier services yet</h3>
-                    <p className="text-muted-foreground text-sm max-w-md">
-                      Add suppliers first, then open each supplier profile to review services and previous work.
-                    </p>
+                    <h3 className="text-lg font-medium mb-2">{t("adminVendors.noSupplierServicesYet")}</h3>
+                    <p className="text-muted-foreground text-sm max-w-md">{t("adminVendors.noSupplierServicesDescription")}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-        
-        {/* Vendor Details Dialog */}
-        <Dialog open={isViewingVendor} onOpenChange={setIsViewingVendor}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>{t("adminVendors.vendorDetails")}</DialogTitle>
-              <DialogDescription>
-                {selectedVendor ? selectedVendor.businessName : t("adminVendors.vendorDetailsDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedVendor && (
-              <form onSubmit={handleUpdateVendor} className="space-y-4">
-                {isLoadingSelectedVendorDetails ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-20 w-full" />
-                  </div>
-                ) : null}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editBusinessName">{t("vendorProfile.businessName")}</Label>
-                    <Input id="editBusinessName" value={selectedVendor.businessName || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, businessName: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("vendors.category")}</Label>
-                    <Select value={selectedVendor.category || ""} onValueChange={(value) => setSelectedVendor({ ...selectedVendor, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("adminVendors.selectCategory")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(SERVICE_CATEGORIES).map(([key, value]) => (
-                          <SelectItem key={key} value={key}>{value}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="editDescription">{t("common.description")}</Label>
-                  <Textarea id="editDescription" value={selectedVendor.description || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, description: e.target.value })} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editEmail">{t("adminVendors.contactEmail")}</Label>
-                    <Input id="editEmail" type="email" value={selectedVendor.email || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, email: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editPhone">{t("common.phone")}</Label>
-                    <Input id="editPhone" value={selectedVendor.phone || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, phone: e.target.value })} />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editAddress">{t("common.address")}</Label>
-                    <Input id="editAddress" value={selectedVendor.address || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, address: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editCity">{t("vendorProfile.city")}</Label>
-                    <Input id="editCity" value={selectedVendor.city || ""} onChange={(e) => setSelectedVendor({ ...selectedVendor, city: e.target.value })} />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("vendorProfile.priceRange")}</Label>
-                    <Select value={selectedVendor.priceRange || ""} onValueChange={(value) => setSelectedVendor({ ...selectedVendor, priceRange: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("adminVendors.selectPriceRange")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="budget">{t("adminVendors.priceBudget")}</SelectItem>
-                        <SelectItem value="moderate">{t("adminVendors.priceModerate")}</SelectItem>
-                        <SelectItem value="premium">{t("adminVendors.pricePremium")}</SelectItem>
-                        <SelectItem value="luxury">{t("adminVendors.priceLuxury")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">{t("vendors.rating")}</h4>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                      <span>{selectedVendor.rating ? selectedVendor.rating.toFixed(1) : t("adminVendors.noRatings")}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editPhotos">Supplier photos</Label>
-                  <Textarea
-                    id="editPhotos"
-                    value={(selectedVendor.photos || []).join("\n")}
-                    placeholder="One image URL per line"
-                    onChange={(e) => setSelectedVendor({ ...selectedVendor, photos: lines(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editPreviousWork">Previous work</Label>
-                  <Textarea
-                    id="editPreviousWork"
-                    value={previousWorkToText(selectedVendor.previousWork)}
-                    placeholder="Title | link URL | image URL | description"
-                    onChange={(e) => setSelectedVendor({ ...selectedVendor, previousWork: parsePreviousWork(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Supplier attachments</Label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Input
-                      id="editSupplierAttachments"
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(event) => handleSupplierAttachmentUpload(event.target.files, "edit")}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploadingAttachments !== null}
-                      onClick={() => document.getElementById("editSupplierAttachments")?.click()}
-                    >
-                      {uploadingAttachments === "edit" ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      Upload attachments
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      Upload files to S3, then save this supplier.
-                    </span>
-                  </div>
-                  {selectedVendor.attachments?.length ? (
-                    <div className="rounded-md border p-3">
-                      <p className="text-sm font-medium">Uploaded files</p>
-                      <div className="mt-2 space-y-1">
-                        {selectedVendor.attachments.map((attachment: any, index: number) => (
-                          <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                            <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
-                              {attachment.fileName || attachment.description || attachment.url}
-                            </a>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedVendor({
-                                ...selectedVendor,
-                                attachments: (selectedVendor.attachments || []).filter((_: any, itemIndex: number) => itemIndex !== index),
-                              })}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-md border p-3">
-                    <h4 className="text-sm font-medium">Previous work</h4>
-                    <p className="text-sm text-muted-foreground">{selectedVendor.previousWork?.length || 0} items</p>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <h4 className="text-sm font-medium">Attachments</h4>
-                    <p className="text-sm text-muted-foreground">{selectedVendor.attachments?.length || 0} files</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-md border p-4">
-                  <div>
-                    <h4 className="font-medium">Supplier page preview</h4>
-                    <p className="text-sm text-muted-foreground">
-                      This is the supplier-facing profile content: info, previous work, attachments, and services.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-md bg-muted/40 p-3">
-                      <h5 className="text-sm font-medium">Info</h5>
-                      <p className="mt-1 text-sm text-muted-foreground">{selectedVendor.description || "No description added."}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {[selectedVendor.category, selectedVendor.city, selectedVendor.priceRange].filter(Boolean).join(" · ") || "No category/location added"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-md bg-muted/40 p-3">
-                      <h5 className="text-sm font-medium">Attachments</h5>
-                      {selectedVendor.attachments?.length ? (
-                        <div className="mt-2 space-y-1">
-                          {selectedVendor.attachments.slice(0, 4).map((attachment: any, index: number) => (
-                            <a
-                              key={`${attachment.url}-${index}`}
-                              href={attachment.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="block truncate text-xs text-primary"
-                            >
-                              {attachment.fileName || attachment.description || attachment.url}
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-1 text-sm text-muted-foreground">No attachments added.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h5 className="mb-2 text-sm font-medium">Previous work</h5>
-                    {selectedVendor.previousWork?.length ? (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {selectedVendor.previousWork.map((work: any, index: number) => (
-                          <div key={`${work.title}-${index}`} className="rounded-md bg-muted/40 p-3">
-                            <h6 className="text-sm font-medium">{work.title}</h6>
-                            {work.description ? <p className="mt-1 text-xs text-muted-foreground">{work.description}</p> : null}
-                            {work.url ? (
-                              <a href={work.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-primary">
-                                Open work link
-                              </a>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No previous work added.</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h5 className="mb-2 text-sm font-medium">Services</h5>
-                    {selectedVendor.services?.length ? (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {selectedVendor.services.map((service: SupplierService) => (
-                          <div key={service.id} className="rounded-md bg-muted/40 p-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <h6 className="text-sm font-medium">{service.name}</h6>
-                              {service.isPackage ? <Badge variant="secondary">Package</Badge> : null}
-                            </div>
-                            {service.description ? <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{service.description}</p> : null}
-                            {service.price !== null && service.price !== undefined ? (
-                              <p className="mt-2 text-sm font-medium">{service.price.toLocaleString()} SAR</p>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No services added for this supplier yet.</p>
-                    )}
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => setIsViewingVendor(false)}>
-                    {t("common.close")}
-                  </Button>
-                  <Button type="submit" disabled={updateVendorMutation.isPending}>
-                    {updateVendorMutation.isPending ? t("vendorProfile.saving") : t("common.save")}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </AdminLayout>
   );

@@ -88,10 +88,8 @@ export default function UnifiedUsersPage() {
   // Create admin user mutation
   const createAdminMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
-      return apiRequest('/api/auth/register', 'POST', {
-        ...userData,
-        userType: 'admin'
-      });
+      const res = await apiRequest("POST", "/api/admin/users", userData);
+      return await res.json();
     },
     onSuccess: () => {
       toast({
@@ -115,16 +113,8 @@ export default function UnifiedUsersPage() {
   // Update permissions mutation
   const updatePermissionsMutation = useMutation({
     mutationFn: async ({ userId, permissions }: { userId: number; permissions: string[] }) => {
-      // First remove all existing permissions
-      await apiRequest(`/api/admin/users/${userId}/permissions`, 'DELETE');
-      
-      // Then add new permissions
-      for (const permission of permissions) {
-        await apiRequest('/api/admin/permissions', 'POST', {
-          userId,
-          permission
-        });
-      }
+      const res = await apiRequest("PUT", `/api/admin/users/${userId}/permissions`, { permissions });
+      return await res.json();
     },
     onSuccess: () => {
       toast({
@@ -147,7 +137,7 @@ export default function UnifiedUsersPage() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return apiRequest(`/api/admin/users/${userId}`, 'DELETE');
+      return apiRequest("DELETE", `/api/admin/users/${userId}`);
     },
     onSuccess: () => {
       toast({
@@ -169,7 +159,7 @@ export default function UnifiedUsersPage() {
   // Promote user to admin mutation
   const promoteToAdminMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return apiRequest(`/api/admin/users/${userId}/promote`, 'PATCH', { userType: 'admin' });
+      return apiRequest("PATCH", `/api/admin/users/${userId}/promote`, { userType: "admin" });
     },
     onSuccess: () => {
       toast({
@@ -190,6 +180,14 @@ export default function UnifiedUsersPage() {
 
   const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newUserData.phone || !newUserData.password) {
+      toast({
+        title: t("adminUsers.validationError"),
+        description: t("adminUsers.requiredFields"),
+        variant: "destructive",
+      });
+      return;
+    }
     createAdminMutation.mutate(newUserData);
   };
 
@@ -436,22 +434,12 @@ export default function UnifiedUsersPage() {
                   <form onSubmit={handleCreateAdmin}>
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">{t("adminUsers.username")}</Label>
+                        <Label htmlFor="phone" className="text-right">{t("common.phone")}</Label>
                         <Input
-                          id="username"
-                          value={newUserData.username}
-                          onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
-                          className="col-span-3"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">{t("adminUsers.email")}</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={newUserData.email}
-                          onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                          id="phone"
+                          type="tel"
+                          value={newUserData.phone}
+                          onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
                           className="col-span-3"
                           required
                         />
@@ -465,6 +453,25 @@ export default function UnifiedUsersPage() {
                           onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
                           className="col-span-3"
                           required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="username" className="text-right">{t("adminUsers.username")} ({t("common.optional")})</Label>
+                        <Input
+                          id="username"
+                          value={newUserData.username}
+                          onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">{t("adminUsers.email")} ({t("common.optional")})</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newUserData.email}
+                          onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                          className="col-span-3"
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">

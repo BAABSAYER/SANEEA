@@ -126,7 +126,7 @@ export default function AdminUsersPage() {
   // Update permissions mutation
   const updatePermissionsMutation = useMutation({
     mutationFn: async ({ userId, permissions }: { userId: number; permissions: string[] }) => {
-      const res = await apiRequest("PATCH", `/api/admin/users/${userId}/permissions`, { permissions });
+      const res = await apiRequest("PUT", `/api/admin/users/${userId}/permissions`, { permissions });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || t("adminUsers.permissionsUpdateError"));
@@ -178,7 +178,7 @@ export default function AdminUsersPage() {
 
   const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserData.username || !newUserData.password || !newUserData.email) {
+    if (!newUserData.phone || !newUserData.password) {
       toast({
         title: t("adminUsers.validationError"),
         description: t("adminUsers.requiredFields"),
@@ -364,13 +364,14 @@ export default function AdminUsersPage() {
                 <form onSubmit={handleCreateAdmin}>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="username" className="text-right">
-                        {t('adminUsers.username')}
+                      <Label htmlFor="phone" className="text-right">
+                        {t("common.phone")}
                       </Label>
                       <Input
-                        id="username"
-                        value={newUserData.username}
-                        onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
+                        id="phone"
+                        type="tel"
+                        value={newUserData.phone}
+                        onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
                         className="col-span-3"
                         required
                       />
@@ -389,8 +390,19 @@ export default function AdminUsersPage() {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="username" className="text-right">
+                        {t('adminUsers.username')} ({t("common.optional")})
+                      </Label>
+                      <Input
+                        id="username"
+                        value={newUserData.username}
+                        onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="email" className="text-right">
-                        {t('adminUsers.email')}
+                        {t('adminUsers.email')} ({t("common.optional")})
                       </Label>
                       <Input
                         id="email"
@@ -398,7 +410,6 @@ export default function AdminUsersPage() {
                         value={newUserData.email}
                         onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
                         className="col-span-3"
-                        required
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -409,17 +420,6 @@ export default function AdminUsersPage() {
                         id="fullName"
                         value={newUserData.fullName}
                         onChange={(e) => setNewUserData({ ...newUserData, fullName: e.target.value })}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="phone" className="text-right">
-                        {t("common.phone")}
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={newUserData.phone}
-                        onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
                         className="col-span-3"
                       />
                     </div>
