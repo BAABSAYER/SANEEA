@@ -66,6 +66,7 @@ const mobilePasswordResetVerifySchema = z.object({
 
 function normalizeSaudiPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("009665") && digits.length === 14) return `+${digits.slice(2)}`;
   if (digits.startsWith("9665") && digits.length === 12) return `+${digits}`;
   if (digits.startsWith("05") && digits.length === 10) return `+966${digits.slice(1)}`;
   if (digits.startsWith("5") && digits.length === 9) return `+966${digits}`;
