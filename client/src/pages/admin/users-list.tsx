@@ -187,7 +187,7 @@ export default function UsersListPage() {
                   className="w-full"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 <Button
                   variant={filterType === "all" ? "default" : "outline"}
                   size="sm"
@@ -235,7 +235,7 @@ export default function UsersListPage() {
             {isLoading ? (
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div key={i} className="flex items-center gap-3 rounded-lg border p-4">
                     <Skeleton className="h-12 w-12 rounded-full" />
                     <div className="space-y-2 flex-1">
                       <Skeleton className="h-4 w-[200px]" />
@@ -256,16 +256,16 @@ export default function UsersListPage() {
             ) : (
               <div className="space-y-4">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center space-x-4">
+                  <div key={user.id} className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3 sm:items-center">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={user.avatarUrl} alt={user.fullName || user.username} />
                         <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                       </Avatar>
                       
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate font-semibold">
                             {user.fullName || user.username || t("adminUsers.unknownUser")}
                           </h3>
                           <Badge variant={getUserTypeBadgeVariant(user.userType)}>
@@ -273,10 +273,10 @@ export default function UsersListPage() {
                           </Badge>
                         </div>
                         
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
+                        <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-4">
+                          <div className="flex min-w-0 items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {user.email}
+                            <span className="truncate">{user.email}</span>
                           </div>
                           
                           {user.phone && (
@@ -294,9 +294,9 @@ export default function UsersListPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 sm:justify-end">
                       <Link href={`/admin/messages?userId=${user.id}`}>
-                        <Button size="sm" className="gap-2">
+                        <Button size="sm" className="w-full gap-2 sm:w-auto">
                           <MessageCircle className="h-4 w-4" />
                           {t('messages.title')}
                         </Button>

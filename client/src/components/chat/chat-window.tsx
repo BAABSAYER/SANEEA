@@ -42,10 +42,10 @@ function MessageInput({ onSend, isLoading }: MessageInputProps) {
   
   return (
     <form onSubmit={handleSubmit} className="bg-white p-3 shadow-md">
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         <Input
           placeholder="Type a message..."
-          className="flex-1 mx-2 bg-neutral-100 py-2 px-4 rounded-full"
+          className="min-w-0 flex-1 bg-neutral-100 px-4 py-2 rounded-full"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           disabled={isLoading}
@@ -236,7 +236,7 @@ export function ChatWindow({ recipientId }: ChatWindowProps) {
                 className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`p-3 max-w-[75%] rounded-lg ${
+                  className={`max-w-[88%] break-words rounded-lg p-3 sm:max-w-[75%] ${
                     isSender 
                       ? 'bg-primary text-primary-foreground rounded-tr-none'
                       : 'bg-white rounded-tl-none shadow-sm'

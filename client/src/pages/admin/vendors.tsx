@@ -241,7 +241,7 @@ export default function AdminVendors() {
     <AdminLayout title={t("adminVendors.title")}>
       <div className="space-y-6">
         <Tabs value={activeView} onValueChange={(value) => setActiveView(value as "vendors" | "services")} className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between overflow-x-auto">
             <TabsList>
               <TabsTrigger value="vendors">{t("navigation.vendors")}</TabsTrigger>
               <TabsTrigger value="services">{t("navigation.services")}</TabsTrigger>
@@ -260,7 +260,7 @@ export default function AdminVendors() {
                 />
               </div>
 
-              <div className="flex gap-2 items-center">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                 <Select value={categoryFilter || ""} onValueChange={(value) => setCategoryFilter(value || null)}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder={t("adminVendors.filterByCategory")} />
@@ -275,7 +275,7 @@ export default function AdminVendors() {
 
                 <Dialog open={isAddingVendor} onOpenChange={setIsAddingVendor}>
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       {t("adminVendors.addVendor")}
                     </Button>
@@ -428,42 +428,75 @@ export default function AdminVendors() {
                     <Skeleton className="h-10 w-full" />
                   </div>
                 ) : filteredVendors.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("vendorProfile.businessName")}</TableHead>
-                        <TableHead>{t("vendors.category")}</TableHead>
-                        <TableHead>{t("common.phone")}</TableHead>
-                        <TableHead>{t("vendors.rating")}</TableHead>
-                        <TableHead>{t("common.actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    <div className="space-y-3 md:hidden">
                       {filteredVendors.map((vendor: any) => (
-                        <TableRow key={vendor.id}>
-                          <TableCell className="font-medium">{vendor.businessName}</TableCell>
-                          <TableCell>{SERVICE_CATEGORIES[vendor.category as keyof typeof SERVICE_CATEGORIES] || vendor.category}</TableCell>
-                          <TableCell>{vendor.phone || t("adminVendors.notAvailable")}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
+                        <div key={vendor.id} className="rounded-lg border p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="truncate font-medium">{vendor.businessName}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {SERVICE_CATEGORIES[vendor.category as keyof typeof SERVICE_CATEGORIES] || vendor.category}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center text-sm">
                               <Star className="h-4 w-4 text-yellow-400 mr-1" />
                               <span>{vendor.rating ? vendor.rating.toFixed(1) : t("adminVendors.noRatings")}</span>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => openVendor(vendor.id)}>
-                                {t("common.viewDetails")}
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteVendor(vendor.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                          <div className="mt-3 text-sm text-muted-foreground">
+                            {vendor.phone || t("adminVendors.notAvailable")}
+                          </div>
+                          <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openVendor(vendor.id)}>
+                              {t("common.viewDetails")}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteVendor(vendor.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("vendorProfile.businessName")}</TableHead>
+                            <TableHead>{t("vendors.category")}</TableHead>
+                            <TableHead>{t("common.phone")}</TableHead>
+                            <TableHead>{t("vendors.rating")}</TableHead>
+                            <TableHead>{t("common.actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredVendors.map((vendor: any) => (
+                            <TableRow key={vendor.id}>
+                              <TableCell className="font-medium">{vendor.businessName}</TableCell>
+                              <TableCell>{SERVICE_CATEGORIES[vendor.category as keyof typeof SERVICE_CATEGORIES] || vendor.category}</TableCell>
+                              <TableCell>{vendor.phone || t("adminVendors.notAvailable")}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center">
+                                  <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                                  <span>{vendor.rating ? vendor.rating.toFixed(1) : t("adminVendors.noRatings")}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm" onClick={() => openVendor(vendor.id)}>
+                                    {t("common.viewDetails")}
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteVendor(vendor.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="rounded-full bg-primary/10 p-3 mb-4">

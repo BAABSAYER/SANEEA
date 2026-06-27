@@ -496,11 +496,11 @@ export default function AdminBookings() {
         </div>
 
         {statusFilter && (
-          <div className="flex items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button variant="outline" size="sm" onClick={() => setStatusFilter(null)}>
               Clear Filter
             </Button>
-            <span className="ml-2 text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground sm:ml-2">
               {t("adminBookingsExtra.showingStatus", { status: t(`bookingStatus.${statusFilter}`, { defaultValue: statusFilter }) })}
             </span>
           </div>
@@ -516,81 +516,139 @@ export default function AdminBookings() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : filteredBookings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>{t('adminUsers.username')}</TableHead>
-                  <TableHead>{t('navigation.vendors')}</TableHead>
-                  <TableHead>{t('adminEvents.title')}</TableHead>
-                  <TableHead>{t('vendorBookings.eventDate')}</TableHead>
-                  <TableHead>{t('common.status')}</TableHead>
-                  <TableHead>{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="space-y-3 p-3 md:hidden">
                 {filteredBookings.map((booking) => (
-                  <TableRow key={booking.id} id={`booking-${booking.id}`}>
-                    <TableCell>#{booking.id}</TableCell>
-                    <TableCell>{booking.clientName || `${t("adminBookingsExtra.client")} #${booking.clientId}`}</TableCell>
-                    <TableCell>{booking.vendor?.businessName || `${t("adminBookingsExtra.vendor")} #${booking.vendorId}`}</TableCell>
-                    <TableCell>{t("adminBookingsExtra.eventType")} #{booking.eventTypeId}</TableCell>
-                    <TableCell>{new Date(booking.eventDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedBooking(booking);
-                            setIsViewingDetails(true);
-                          }}
-                        >
-                          {t('common.viewDetails')}
-                        </Button>
-                        {booking.status === BOOKING_STATUS.PENDING && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleCreateQuotation(booking)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            {t('adminBookings.createQuotation')}
-                          </Button>
-                        )}
-                        {booking.status === BOOKING_STATUS.QUOTATION_SENT && booking.totalPrice && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedBooking(booking);
-                              setIsViewingDetails(true);
-                            }}
-                          >
-                            <FileText className="h-3 w-3 mr-1" />
-                            {t('common.viewDetails')}
-                          </Button>
-                        )}
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(t('adminBookings.confirmDelete'))) {
-                              deleteBookingMutation.mutate(booking.id);
-                            }
-                          }}
-                          disabled={deleteBookingMutation.isPending}
-                        >
-                          {t('common.delete')}
-                        </Button>
+                  <div key={booking.id} id={`booking-${booking.id}`} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-medium">#{booking.id} {booking.clientName || `${t("adminBookingsExtra.client")} #${booking.clientId}`}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {booking.vendor?.businessName || `${t("adminBookingsExtra.vendor")} #${booking.vendorId}`}
+                        </p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                      {getStatusBadge(booking.status)}
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                      <div>{t("adminBookingsExtra.eventType")} #{booking.eventTypeId}</div>
+                      <div>{new Date(booking.eventDate).toLocaleDateString()}</div>
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setIsViewingDetails(true);
+                        }}
+                      >
+                        {t('common.viewDetails')}
+                      </Button>
+                      {booking.status === BOOKING_STATUS.PENDING && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleCreateQuotation(booking)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          {t('adminBookings.createQuotation')}
+                        </Button>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t('adminBookings.confirmDelete'))) {
+                            deleteBookingMutation.mutate(booking.id);
+                          }
+                        }}
+                        disabled={deleteBookingMutation.isPending}
+                      >
+                        {t('common.delete')}
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>{t('adminUsers.username')}</TableHead>
+                      <TableHead>{t('navigation.vendors')}</TableHead>
+                      <TableHead>{t('adminEvents.title')}</TableHead>
+                      <TableHead>{t('vendorBookings.eventDate')}</TableHead>
+                      <TableHead>{t('common.status')}</TableHead>
+                      <TableHead>{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBookings.map((booking) => (
+                      <TableRow key={booking.id} id={`booking-${booking.id}`}>
+                        <TableCell>#{booking.id}</TableCell>
+                        <TableCell>{booking.clientName || `${t("adminBookingsExtra.client")} #${booking.clientId}`}</TableCell>
+                        <TableCell>{booking.vendor?.businessName || `${t("adminBookingsExtra.vendor")} #${booking.vendorId}`}</TableCell>
+                        <TableCell>{t("adminBookingsExtra.eventType")} #{booking.eventTypeId}</TableCell>
+                        <TableCell>{new Date(booking.eventDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setIsViewingDetails(true);
+                              }}
+                            >
+                              {t('common.viewDetails')}
+                            </Button>
+                            {booking.status === BOOKING_STATUS.PENDING && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleCreateQuotation(booking)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <DollarSign className="h-3 w-3 mr-1" />
+                                {t('adminBookings.createQuotation')}
+                              </Button>
+                            )}
+                            {booking.status === BOOKING_STATUS.QUOTATION_SENT && booking.totalPrice && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setIsViewingDetails(true);
+                                }}
+                              >
+                                <FileText className="h-3 w-3 mr-1" />
+                                {t('common.viewDetails')}
+                              </Button>
+                            )}
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(t('adminBookings.confirmDelete'))) {
+                                  deleteBookingMutation.mutate(booking.id);
+                                }
+                              }}
+                              disabled={deleteBookingMutation.isPending}
+                            >
+                              {t('common.delete')}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <div className="p-8 text-center">
               <h3 className="text-lg font-medium">{t('adminBookings.noBookings')}</h3>

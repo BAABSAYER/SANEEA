@@ -348,9 +348,9 @@ function EventTypesTab() {
   return (
     <div>
       <div className="mb-10">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold">{t('adminEvents.title')}</h2>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t('adminEvents.createEventType')}
         </Button>
@@ -360,9 +360,9 @@ function EventTypesTab() {
         {eventTypes?.map((eventType) => (
           <Card key={eventType.id} className="overflow-hidden">
             <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <CardTitle className="flex items-center gap-2 break-words">
                     {eventType.icon && <span>{eventType.icon}</span>}
                     {eventType.name}
                   </CardTitle>
@@ -388,7 +388,7 @@ function EventTypesTab() {
               </div>
             </CardContent>
             <CardFooter className="pt-2">
-              <div className="flex gap-2 w-full">
+              <div className="grid w-full grid-cols-[1fr_auto_auto] gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -474,7 +474,7 @@ function EventTypesTab() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('adminEvents.locationImageUrls')}</label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   type="file"
                   accept="image/*"
@@ -493,7 +493,7 @@ function EventTypesTab() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('adminEvents.eventVideoUrls')}</label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   type="file"
                   accept="video/*"

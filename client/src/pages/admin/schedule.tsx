@@ -233,7 +233,7 @@ export default function AdminSchedule() {
                     <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                   </Button>
                 </div>
-                <Tabs value={view} onValueChange={handleViewChange}>
+                <Tabs value={view} onValueChange={handleViewChange} className="max-w-full">
                   <TabsList>
                     <TabsTrigger value="month">{t("adminSchedule.month")}</TabsTrigger>
                     <TabsTrigger value="week">{t("adminSchedule.week")}</TabsTrigger>
@@ -258,6 +258,8 @@ export default function AdminSchedule() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <Card className="overflow-hidden">
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
+              <div className="min-w-[720px]">
               <div className="grid grid-cols-7 border-b bg-muted/40 text-center text-xs font-medium text-muted-foreground">
                 {Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(new Date(), { weekStartsOn }), index)).map((day) => (
                   <div key={day.toISOString()} className="px-2 py-3">
@@ -344,6 +346,8 @@ export default function AdminSchedule() {
                   })}
                 </div>
               )}
+              </div>
+              </div>
             </CardContent>
           </Card>
 

@@ -256,7 +256,7 @@ export default function AdminUsersPage() {
       <div className="space-y-8">
         {/* All Users Section */}
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold">{t('adminUsers.title')}</h2>
             </div>
@@ -275,64 +275,92 @@ export default function AdminUsersPage() {
             </Card>
           ) : allUsers && Array.isArray(allUsers) && allUsers.length > 0 ? (
             <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.name')}</TableHead>
-                    <TableHead>{t('adminUsers.email')}</TableHead>
-                    <TableHead>{t('vendorProfile.phone')}</TableHead>
-                    <TableHead>{t('adminUsers.role')}</TableHead>
-                    <TableHead>{t('adminUsers.lastActive')}</TableHead>
-                    <TableHead>{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(allUsers as any[]).map((user: any) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{user.fullName || user.username}</div>
-                          <div className="text-sm text-muted-foreground">@{user.username}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phone || t("adminUsers.notProvided")}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.userType === 'admin' ? 'default' : 'secondary'}>
-                          {user.userType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <Link href={`/admin/messages?userId=${user.id}`}>
-                              <MessageCircle className="h-4 w-4 mr-1" />
-                              {t("navigation.chat")}
-                            </Link>
-                          </Button>
-                          {user.userType !== 'admin' && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              {t("common.delete")}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+              <div className="space-y-3 p-4 md:hidden">
+                {(allUsers as any[]).map((user: any) => (
+                  <div key={user.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-medium">{user.fullName || user.username}</div>
+                        <div className="truncate text-sm text-muted-foreground">@{user.username}</div>
+                      </div>
+                      <Badge variant={user.userType === 'admin' ? 'default' : 'secondary'}>
+                        {user.userType}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                      <div className="truncate">{user.phone || t("adminUsers.notProvided")}</div>
+                      {user.email ? <div className="truncate">{user.email}</div> : null}
+                      <div>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</div>
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/messages?userId=${user.id}`}>
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          {t("navigation.chat")}
+                        </Link>
+                      </Button>
+                      {user.userType !== 'admin' && (
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          {t("common.delete")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('common.name')}</TableHead>
+                      <TableHead>{t('adminUsers.email')}</TableHead>
+                      <TableHead>{t('vendorProfile.phone')}</TableHead>
+                      <TableHead>{t('adminUsers.role')}</TableHead>
+                      <TableHead>{t('adminUsers.lastActive')}</TableHead>
+                      <TableHead>{t('common.actions')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {(allUsers as any[]).map((user: any) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{user.fullName || user.username}</div>
+                            <div className="text-sm text-muted-foreground">@{user.username}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.phone || t("adminUsers.notProvided")}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.userType === 'admin' ? 'default' : 'secondary'}>
+                            {user.userType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/admin/messages?userId=${user.id}`}>
+                                <MessageCircle className="h-4 w-4 mr-1" />
+                                {t("navigation.chat")}
+                              </Link>
+                            </Button>
+                            {user.userType !== 'admin' && (
+                              <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id)}>
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                {t("common.delete")}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
           ) : (
             <Card>
@@ -346,7 +374,7 @@ export default function AdminUsersPage() {
 
         {/* Admin Users Management Section */}
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold">{t('adminUsers.manageAdmins')}</h2>
             </div>
@@ -373,7 +401,7 @@ export default function AdminUsersPage() {
                         type="tel"
                         value={newUserData.phone}
                         onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
-                        className="col-span-3"
+                        className="sm:col-span-3"
                         required
                       />
                     </div>
@@ -386,7 +414,7 @@ export default function AdminUsersPage() {
                         type="password"
                         value={newUserData.password}
                         onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-                        className="col-span-3"
+                        className="sm:col-span-3"
                         required
                       />
                     </div>
@@ -398,7 +426,7 @@ export default function AdminUsersPage() {
                         id="username"
                         value={newUserData.username}
                         onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
-                        className="col-span-3"
+                        className="sm:col-span-3"
                       />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
@@ -410,7 +438,7 @@ export default function AdminUsersPage() {
                         type="email"
                         value={newUserData.email}
                         onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                        className="col-span-3"
+                        className="sm:col-span-3"
                       />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
@@ -421,7 +449,7 @@ export default function AdminUsersPage() {
                         id="fullName"
                         value={newUserData.fullName}
                         onChange={(e) => setNewUserData({ ...newUserData, fullName: e.target.value })}
-                        className="col-span-3"
+                        className="sm:col-span-3"
                       />
                     </div>
                     <div className="mt-4">

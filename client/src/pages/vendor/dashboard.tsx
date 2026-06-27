@@ -102,7 +102,7 @@ export default function VendorDashboard() {
       
       {/* Overview Stats */}
       <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-bold text-lg text-foreground">Overview</h2>
           <Button variant="outline" size="sm" className="text-sm">
             View Reports
@@ -135,7 +135,7 @@ export default function VendorDashboard() {
       
       {/* Recent Bookings */}
       <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-bold text-lg text-foreground">Recent Bookings</h2>
           <Button 
             variant="link" 

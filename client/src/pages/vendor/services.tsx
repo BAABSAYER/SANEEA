@@ -58,7 +58,7 @@ export default function VendorServices() {
       <Header title="My Services" showBack={true} showSearch={false} />
       
       <div className="px-5 pt-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-bold text-lg text-foreground">Services & Packages</h2>
           <Button 
             onClick={handleAddService}
@@ -171,7 +171,7 @@ function ServiceCard({ service, onEdit }: { service: VendorService, onEdit: () =
         </div>
       </div>
       <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="font-medium text-neutral-800">{service.name}</h3>
           <div className="flex items-center">
             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />

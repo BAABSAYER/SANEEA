@@ -143,9 +143,9 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
-          <h1 className="text-xl font-bold">{title}</h1>
-          <div className="flex items-center gap-4">
+        <header className="min-h-16 border-b border-border bg-card flex items-center justify-between gap-3 px-4 py-3 pl-16 md:px-6 md:pl-6">
+          <h1 className="min-w-0 truncate text-lg font-bold md:text-xl">{title}</h1>
+          <div className="flex shrink-0 items-center gap-2 md:gap-4">
             <LanguageSwitcher />
             {user && (
               <div className="hidden md:flex items-center gap-2">
@@ -156,7 +156,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             )}
           </div>
         </header>
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

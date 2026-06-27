@@ -259,6 +259,46 @@ export default function UnifiedUsersPage() {
     );
   };
 
+  const renderMobileUserCard = (rowUser: User) => (
+    <div key={rowUser.id} className="rounded-lg border p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {getUserTypeIcon(rowUser.userType)}
+          <div className="min-w-0">
+            <p className="truncate font-medium">{rowUser.fullName || rowUser.username}</p>
+            <p className="truncate text-sm text-muted-foreground">@{rowUser.username}</p>
+          </div>
+        </div>
+        {getUserTypeBadge(rowUser.userType)}
+      </div>
+      <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+        {rowUser.phone ? <p className="truncate">{rowUser.phone}</p> : null}
+        {rowUser.email ? <p className="truncate font-mono">{rowUser.email}</p> : null}
+        <p>{new Date(rowUser.createdAt).toLocaleDateString()}</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link href={`/admin/messages?userId=${rowUser.id}`}>
+          <Button variant="outline" size="sm">
+            <MessageCircle className="h-4 w-4 mr-1" />
+            {t("navigation.chat")}
+          </Button>
+        </Link>
+        {rowUser.userType === 'client' && (
+          <Button variant="outline" size="sm" onClick={() => handlePromoteUser(rowUser.id)}>
+            <Crown className="h-4 w-4 mr-1" />
+            {t("adminUsers.promoteToAdmin")}
+          </Button>
+        )}
+        {rowUser.id !== user?.id && rowUser.userType !== 'admin' && (
+          <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(rowUser.id)}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            {t("common.delete")}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <AdminLayout title={t('adminUsers.title')}>
       <div className="space-y-6">
@@ -327,7 +367,7 @@ export default function UnifiedUsersPage() {
 
           {/* All Users Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">{t('adminUsers.title')}</h2>
               </div>
@@ -346,7 +386,11 @@ export default function UnifiedUsersPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="p-0">
+                <CardContent className="p-4 md:p-0">
+                  <div className="space-y-3 md:hidden">
+                    {allUsers?.map((user) => renderMobileUserCard(user))}
+                  </div>
+                  <div className="hidden md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -409,6 +453,7 @@ export default function UnifiedUsersPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -416,7 +461,7 @@ export default function UnifiedUsersPage() {
 
           {/* Admin Team Management Tab */}
           <TabsContent value="admins" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">{t('adminUsers.manageAdmins')}</h2>
               </div>
@@ -441,7 +486,7 @@ export default function UnifiedUsersPage() {
                           type="tel"
                           value={newUserData.phone}
                           onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
-                          className="col-span-3"
+                          className="sm:col-span-3"
                           required
                         />
                       </div>
@@ -452,7 +497,7 @@ export default function UnifiedUsersPage() {
                           type="password"
                           value={newUserData.password}
                           onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-                          className="col-span-3"
+                          className="sm:col-span-3"
                           required
                         />
                       </div>
@@ -462,7 +507,7 @@ export default function UnifiedUsersPage() {
                           id="username"
                           value={newUserData.username}
                           onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
-                          className="col-span-3"
+                          className="sm:col-span-3"
                         />
                       </div>
                       <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
@@ -472,7 +517,7 @@ export default function UnifiedUsersPage() {
                           type="email"
                           value={newUserData.email}
                           onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                          className="col-span-3"
+                          className="sm:col-span-3"
                         />
                       </div>
                       <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
@@ -481,7 +526,7 @@ export default function UnifiedUsersPage() {
                           id="fullName"
                           value={newUserData.fullName}
                           onChange={(e) => setNewUserData({ ...newUserData, fullName: e.target.value })}
-                          className="col-span-3"
+                          className="sm:col-span-3"
                         />
                       </div>
                     </div>
@@ -514,7 +559,7 @@ export default function UnifiedUsersPage() {
                 {adminUsers?.map((adminUser) => (
                   <Card key={adminUser.id}>
                     <CardHeader className="pb-2">
-                      <CardTitle className="flex justify-between items-center">
+                    <CardTitle className="flex items-center justify-between gap-3">
                         <span>{adminUser.fullName || adminUser.username}</span>
                         {adminUser.id !== user?.id && (
                           <Button
@@ -571,14 +616,18 @@ export default function UnifiedUsersPage() {
 
           {/* Clients & Vendors Tab */}
           <TabsContent value="clients" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">{t('adminUsers.manageVendors')}</h2>
               </div>
             </div>
 
             <Card>
-              <CardContent className="p-0">
+              <CardContent className="p-4 md:p-0">
+                <div className="space-y-3 md:hidden">
+                  {allUsers?.filter(u => u.userType !== 'admin').map((user) => renderMobileUserCard(user))}
+                </div>
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -639,6 +688,7 @@ export default function UnifiedUsersPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

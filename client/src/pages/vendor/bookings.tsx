@@ -152,21 +152,21 @@ export default function VendorBookings() {
             
             <div className="space-y-4 my-4">
               <div className="bg-neutral-50 p-4 rounded-lg">
-                <div className="flex justify-between mb-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
                   <div className="text-neutral-600 text-sm">Event Date</div>
                   <div className="font-medium">
                     {new Date(selectedBooking.eventDate).toLocaleDateString()}
                   </div>
                 </div>
-                <div className="flex justify-between mb-2">
+                <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
                   <div className="text-neutral-600 text-sm">Event Type</div>
                   <div className="font-medium">{selectedBooking.eventType}</div>
                 </div>
-                <div className="flex justify-between mb-2">
+                <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
                   <div className="text-neutral-600 text-sm">Guest Count</div>
                   <div className="font-medium">{selectedBooking.guestCount}</div>
                 </div>
-                <div className="flex justify-between">
+                <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
                   <div className="text-neutral-600 text-sm">Status</div>
                   <div className="font-medium capitalize">{selectedBooking.status}</div>
                 </div>
@@ -175,7 +175,7 @@ export default function VendorBookings() {
               <div>
                 <h4 className="font-medium mb-2">Client Information</h4>
                 <div className="bg-neutral-50 p-4 rounded-lg">
-                  <div className="flex justify-between mb-2">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
                     <div className="text-neutral-600 text-sm">Name</div>
                     <div className="font-medium">{selectedBooking.clientName || 'Client'}</div>
                   </div>
@@ -185,15 +185,15 @@ export default function VendorBookings() {
               <div>
                 <h4 className="font-medium mb-2">Package Details</h4>
                 <div className="bg-neutral-50 p-4 rounded-lg">
-                  <div className="flex justify-between mb-2">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
                     <div className="text-neutral-600 text-sm">Service</div>
                     <div className="font-medium">{selectedBooking.serviceName}</div>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
                     <div className="text-neutral-600 text-sm">Package</div>
                     <div className="font-medium">{selectedBooking.packageType}</div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
                     <div className="text-neutral-600 text-sm">Total Price</div>
                     <div className="font-medium text-secondary">${selectedBooking.totalPrice}</div>
                   </div>
@@ -290,23 +290,23 @@ function BookingsList({ bookings, isLoading, emptyMessage, onSelect }: BookingsL
       {bookings.map((booking: any) => (
         <div 
           key={booking.id} 
-          className="bg-white p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-neutral-50 transition-colors"
+          className="flex cursor-pointer flex-col gap-3 rounded-lg bg-white p-4 shadow-sm transition-colors hover:bg-neutral-50 sm:flex-row sm:items-center"
           onClick={() => onSelect(booking)}
         >
-          <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mr-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-100 sm:mr-3">
             <Users className="h-6 w-6 text-neutral-500" />
           </div>
           
-          <div className="flex-1">
-            <div className="flex justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
               <h3 className="font-medium text-neutral-800">
                 {booking.clientName || 'Client'}
               </h3>
               <BookingStatusBadge status={booking.status} />
             </div>
             
-            <div className="flex text-sm text-neutral-600 mt-1">
-              <div className="flex items-center mr-3">
+            <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-600">
+              <div className="flex items-center">
                 <Calendar className="h-3 w-3 mr-1" />
                 {new Date(booking.eventDate).toLocaleDateString()}
               </div>
@@ -317,7 +317,7 @@ function BookingsList({ bookings, isLoading, emptyMessage, onSelect }: BookingsL
             </div>
           </div>
           
-          <ChevronRight className="h-5 w-5 text-neutral-400" />
+          <ChevronRight className="hidden h-5 w-5 text-neutral-400 sm:block" />
         </div>
       ))}
     </div>

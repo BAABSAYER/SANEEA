@@ -17,7 +17,7 @@ export default function AdminMessages() {
     <AdminLayout title={t("messages.title")}>
       <div className="h-full">
         {userId && Number.isFinite(userId) ? (
-          <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
+          <div className="flex h-[calc(100svh-7rem)] flex-col gap-4 md:h-[calc(100vh-8rem)]">
             <div>
               <Button variant="outline" size="sm" onClick={() => navigate("/admin/messages")}>
                 <ArrowRight className="mr-2 h-4 w-4" />

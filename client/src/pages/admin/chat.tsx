@@ -108,9 +108,9 @@ export default function AdminChat() {
   
   return (
     <AdminLayout title={t("messages.title")}>
-      <div className="flex h-[calc(100vh-10rem)] rounded-md border overflow-hidden">
+      <div className="flex h-[calc(100svh-7rem)] overflow-hidden rounded-md border md:h-[calc(100vh-10rem)]">
         {/* Client list sidebar */}
-        <div className="w-64 border-r flex flex-col bg-card">
+        <div className={`${selectedUser ? "hidden md:flex" : "flex"} w-full flex-col border-r bg-card md:w-64`}>
           <div className="p-4 border-b">
             <h3 className="font-medium">{t("adminChat.clientConversations")}</h3>
           </div>
@@ -139,7 +139,7 @@ export default function AdminChat() {
                       {/* Avatar image would go here if available */}
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="font-medium truncate">
                           {client.fullName || client.username}
                         </span>
@@ -165,7 +165,7 @@ export default function AdminChat() {
         </div>
         
         {/* Chat area */}
-        <div className="flex-1 flex flex-col">
+        <div className={`${selectedUser ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
           {selectedUser ? (
             <>
               {/* Chat header */}
@@ -266,12 +266,12 @@ export default function AdminChat() {
               </div>
               
               {/* Message input */}
-              <form onSubmit={handleSendMessage} className="p-3 border-t bg-card flex items-center gap-2">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 border-t bg-card p-3">
                 <Input
                   placeholder={t("chat.typeMessage")}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  className="flex-1"
+                  className="min-w-0 flex-1"
                 />
                 <Button 
                   type="submit" 

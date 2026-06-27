@@ -261,7 +261,7 @@ export default function AdminDashboard() {
               </Card>
 
               {/* Event Requests */}
-              <Card className="col-span-3">
+              <Card className="lg:col-span-3">
                 <CardHeader>
                   <CardTitle>{t('adminDashboard.recentBookings')}</CardTitle>
                 </CardHeader>
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
               </Card>
 
               {/* Popular Event Types */}
-              <Card className="col-span-3">
+              <Card className="lg:col-span-3">
                 <CardHeader>
                   <CardTitle>{t('adminDashboard.popularEventTypes')}</CardTitle>
                 </CardHeader>
