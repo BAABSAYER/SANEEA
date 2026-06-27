@@ -2,7 +2,7 @@ import { createRef, useMemo } from "react";
 import { TextInput, View } from "react-native";
 import { colors } from "../theme/colors";
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 
 type OtpCodeInputProps = {
   digits: string[];
@@ -41,7 +41,7 @@ export function OtpCodeInput({ digits, setDigits }: OtpCodeInputProps) {
   }
 
   return (
-    <View style={{ flexDirection: "row", gap: 6, justifyContent: "center" }}>
+    <View style={{ flexDirection: "row", gap: 10, justifyContent: "center" }}>
       {digits.map((digit, index) => (
         <TextInput
           key={index}
@@ -56,15 +56,15 @@ export function OtpCodeInput({ digits, setDigits }: OtpCodeInputProps) {
           style={{
             backgroundColor: colors.surface,
             borderColor: digit ? colors.green : colors.line,
-            borderRadius: 12,
+            borderRadius: 14,
             borderWidth: 1,
             color: colors.black,
             fontFamily: "Almarai-Bold",
-            fontSize: 20,
-            height: 50,
+            fontSize: 24,
+            height: 58,
             textAlign: "center",
             writingDirection: "ltr",
-            width: 44,
+            width: 58,
           }}
         />
       ))}
