@@ -77,7 +77,7 @@ export default function VendorDashboard() {
       </div>
       
       {/* Quick Links */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 mb-6">
         <QuickLink 
           icon={<Store className="h-5 w-5" />} 
           label="Services" 
@@ -109,7 +109,7 @@ export default function VendorDashboard() {
           </Button>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <StatCard 
             icon={<DollarSign className="h-5 w-5 text-green-500" />}
             label="Total Revenue"
@@ -281,7 +281,7 @@ function VendorDashboardSkeleton() {
         <Skeleton className="h-4 w-64" />
       </div>
       
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 mb-6">
         {[1, 2, 3, 4].map((i) => (
           <Skeleton key={i} className="h-20 rounded-xl" />
         ))}

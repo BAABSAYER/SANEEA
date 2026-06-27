@@ -86,7 +86,7 @@ export default function VendorBookings() {
       
       <div className="px-5 pt-4">
         <Tabs defaultValue="upcoming" className="w-full" onValueChange={(value) => setActiveTab(value as FilterTab)}>
-          <TabsList className="grid grid-cols-4 mb-4">
+          <TabsList className="mb-4 flex w-full justify-start overflow-x-auto">
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>

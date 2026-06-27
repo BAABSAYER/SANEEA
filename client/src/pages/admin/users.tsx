@@ -360,11 +360,12 @@ export default function AdminUsersPage() {
               <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
                   <DialogTitle>{t('adminUsers.createAdmin')}</DialogTitle>
+                  <DialogDescription>{t("adminUsers.createAdminDescription")}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreateAdmin}>
                   <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="phone" className="text-right">
+                    <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                      <Label htmlFor="phone" className="text-left sm:text-right">
                         {t("common.phone")}
                       </Label>
                       <Input
@@ -376,8 +377,8 @@ export default function AdminUsersPage() {
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="password" className="text-right">
+                    <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                      <Label htmlFor="password" className="text-left sm:text-right">
                         {t("adminUsers.password")}
                       </Label>
                       <Input
@@ -389,8 +390,8 @@ export default function AdminUsersPage() {
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="username" className="text-right">
+                    <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                      <Label htmlFor="username" className="text-left sm:text-right">
                         {t('adminUsers.username')} ({t("common.optional")})
                       </Label>
                       <Input
@@ -400,8 +401,8 @@ export default function AdminUsersPage() {
                         className="col-span-3"
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="email" className="text-right">
+                    <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                      <Label htmlFor="email" className="text-left sm:text-right">
                         {t('adminUsers.email')} ({t("common.optional")})
                       </Label>
                       <Input
@@ -412,8 +413,8 @@ export default function AdminUsersPage() {
                         className="col-span-3"
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="fullName" className="text-right">
+                    <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                      <Label htmlFor="fullName" className="text-left sm:text-right">
                         {t('adminUsers.fullName')}
                       </Label>
                       <Input
@@ -425,7 +426,7 @@ export default function AdminUsersPage() {
                     </div>
                     <div className="mt-4">
                       <Label className="mb-2 block">{t("adminUsers.permissions")}</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="grid gap-2 mt-1 sm:grid-cols-2">
                         {permissionsList.map((permission) => (
                           <div key={permission.id} className="flex items-center space-x-2">
                             <Checkbox
@@ -532,10 +533,11 @@ export default function AdminUsersPage() {
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>{t('adminUsers.editPermissions')}</DialogTitle>
+                            <DialogDescription>{t("adminUsers.editPermissionsDescription")}</DialogDescription>
                           </DialogHeader>
                           {selectedUser && (
                             <form onSubmit={handleUpdatePermissions}>
-                              <div className="grid grid-cols-2 gap-4 py-4">
+                              <div className="grid gap-4 py-4 sm:grid-cols-2">
                                 {permissionsList.map((permission) => (
                                   <div key={permission.id} className="flex items-center space-x-2">
                                     <Checkbox

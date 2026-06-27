@@ -193,7 +193,7 @@ export default function AdminDashboard() {
         
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+          <TabsList className="flex w-full justify-start overflow-x-auto lg:w-auto">
             <TabsTrigger value="overview">{t('adminDashboard.overview')}</TabsTrigger>
             <TabsTrigger value="analytics">{t('adminDashboard.analytics')}</TabsTrigger>
             <TabsTrigger value="reports">{t('adminDashboard.reports')}</TabsTrigger>

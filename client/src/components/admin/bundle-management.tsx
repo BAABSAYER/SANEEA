@@ -503,13 +503,13 @@ export function BundleManagement() {
               {t('adminBundles.createBundle')}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t('adminBundles.createBundle')}</DialogTitle>
             </DialogHeader>
             <Form {...bundleForm}>
               <form onSubmit={bundleForm.handleSubmit(onCreateBundle)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={bundleForm.control}
                     name="eventTypeId"
@@ -590,7 +590,7 @@ export function BundleManagement() {
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={bundleForm.control}
                     name="basePrice"
@@ -787,7 +787,7 @@ export function BundleManagement() {
               <CardContent className="space-y-4">
                 <p className="text-sm text-gray-700">{bundle.description}</p>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid gap-4 sm:grid-cols-2 text-sm">
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">{t('adminBundles.basePrice')}:</span>
@@ -865,14 +865,14 @@ export function BundleManagement() {
 
       {/* Edit Bundle Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('adminBundles.editBundle')}: {selectedBundle?.name}</DialogTitle>
           </DialogHeader>
           <Form {...bundleForm}>
             <form onSubmit={bundleForm.handleSubmit(onUpdateBundle)} className="space-y-4">
               {/* Same form fields as create, but with update handler */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={bundleForm.control}
                   name="eventTypeId"
@@ -949,7 +949,7 @@ export function BundleManagement() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={bundleForm.control}
                   name="basePrice"
@@ -1127,7 +1127,7 @@ export function BundleManagement() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={optionForm.control}
                   name="price"
@@ -1232,7 +1232,7 @@ export function BundleManagement() {
       </Dialog>
 
       <Dialog open={isBundleItemsOpen} onOpenChange={setIsBundleItemsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('adminBundles.packageItemsTitle', { name: selectedBundle?.name })}</DialogTitle>
           </DialogHeader>
@@ -1243,7 +1243,7 @@ export function BundleManagement() {
                 <CardTitle className="text-base">{t('adminBundles.addEventItemToPackage')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Select
                     value={bundleItemForm.eventItemId}
                     onValueChange={(value) => setBundleItemForm({ ...bundleItemForm, eventItemId: value, defaultOptionId: '' })}
@@ -1278,7 +1278,7 @@ export function BundleManagement() {
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <Input
                     type="number"
                     min="1"

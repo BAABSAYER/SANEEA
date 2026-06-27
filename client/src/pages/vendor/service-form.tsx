@@ -194,7 +194,7 @@ export default function ServiceForm() {
             {/* Service Images */}
             <div>
               <h3 className="font-medium text-neutral-800 mb-2">Service Images</h3>
-              <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-2">
                 {images.map((img, index) => (
                   <div key={index} className="relative h-24 rounded-lg overflow-hidden">
                     <img src={img} alt={`Service ${index + 1}`} className="w-full h-full object-cover" />
@@ -315,7 +315,7 @@ export default function ServiceForm() {
                   )}
                 />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="hasStandardPackage"
@@ -368,7 +368,7 @@ export default function ServiceForm() {
               <h3 className="font-medium text-neutral-800 mb-4">Additional Details</h3>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="duration"

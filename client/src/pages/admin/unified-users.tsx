@@ -319,7 +319,7 @@ export default function UnifiedUsersPage() {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="flex w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview">{t('adminUsers.title')}</TabsTrigger>
             <TabsTrigger value="admins">{t('adminUsers.manageAdmins')}</TabsTrigger>
             <TabsTrigger value="clients">{t('adminUsers.manageVendors')}</TabsTrigger>
@@ -430,11 +430,12 @@ export default function UnifiedUsersPage() {
                 <DialogContent className="sm:max-w-[525px]">
                   <DialogHeader>
                     <DialogTitle>{t('adminUsers.createAdmin')}</DialogTitle>
+                    <DialogDescription>{t("adminUsers.createAdminDescription")}</DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleCreateAdmin}>
                     <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="phone" className="text-right">{t("common.phone")}</Label>
+                      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                        <Label htmlFor="phone" className="text-left sm:text-right">{t("common.phone")}</Label>
                         <Input
                           id="phone"
                           type="tel"
@@ -444,8 +445,8 @@ export default function UnifiedUsersPage() {
                           required
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">{t("adminUsers.password")}</Label>
+                      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                        <Label htmlFor="password" className="text-left sm:text-right">{t("adminUsers.password")}</Label>
                         <Input
                           id="password"
                           type="password"
@@ -455,8 +456,8 @@ export default function UnifiedUsersPage() {
                           required
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">{t("adminUsers.username")} ({t("common.optional")})</Label>
+                      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                        <Label htmlFor="username" className="text-left sm:text-right">{t("adminUsers.username")} ({t("common.optional")})</Label>
                         <Input
                           id="username"
                           value={newUserData.username}
@@ -464,8 +465,8 @@ export default function UnifiedUsersPage() {
                           className="col-span-3"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">{t("adminUsers.email")} ({t("common.optional")})</Label>
+                      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                        <Label htmlFor="email" className="text-left sm:text-right">{t("adminUsers.email")} ({t("common.optional")})</Label>
                         <Input
                           id="email"
                           type="email"
@@ -474,8 +475,8 @@ export default function UnifiedUsersPage() {
                           className="col-span-3"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="fullName" className="text-right">{t("adminUsers.fullName")}</Label>
+                      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+                        <Label htmlFor="fullName" className="text-left sm:text-right">{t("adminUsers.fullName")}</Label>
                         <Input
                           id="fullName"
                           value={newUserData.fullName}
@@ -646,9 +647,10 @@ export default function UnifiedUsersPage() {
         {/* Permissions Management Dialog */}
         <Dialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{t('adminUsers.editPermissions')}</DialogTitle>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{t('adminUsers.editPermissions')}</DialogTitle>
+            <DialogDescription>{t("adminUsers.editPermissionsDescription")}</DialogDescription>
+          </DialogHeader>
             {selectedUser && (
               <form onSubmit={handleUpdatePermissions}>
                 <div className="grid gap-4 py-4">

@@ -611,7 +611,9 @@
   "adminUsers": {
     "title": "إدارة المستخدمين",
     "createAdmin": "إنشاء مشرف",
+    "createAdminDescription": "إنشاء حساب مشرف باستخدام رقم الهاتف كطريقة الدخول الأساسية.",
     "editPermissions": "تعديل الصلاحيات",
+    "editPermissionsDescription": "اختر مناطق الإدارة التي يمكن لهذا المستخدم الوصول إليها.",
     "deleteAdmin": "حذف المشرف",
     "fullName": "الاسم الكامل",
     "email": "البريد الإلكتروني",

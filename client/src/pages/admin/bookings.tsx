@@ -608,7 +608,7 @@ export default function AdminBookings() {
           
           {selectedBooking && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h4 className="text-sm font-medium mb-1">{t("adminBookingsExtra.client")}</h4>
                   <p>{selectedBooking.clientName || `${t("adminBookingsExtra.client")} #${selectedBooking.clientId}`}</p>
@@ -624,7 +624,7 @@ export default function AdminBookings() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h4 className="text-sm font-medium mb-1">{t('adminBookings.eventDate')}</h4>
                   <p>{new Date(selectedBooking.eventDate).toLocaleDateString()}</p>
@@ -864,7 +864,7 @@ export default function AdminBookings() {
                   <CardTitle className="text-lg">{t("adminBookingsExtra.bookingSummary")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid gap-4 sm:grid-cols-2 text-sm">
                     <div>
                       <strong>{t("adminBookingsExtra.client")}:</strong> {selectedBooking.clientName || `${t("adminBookingsExtra.client")} #${selectedBooking.clientId}`}
                     </div>
@@ -899,8 +899,8 @@ export default function AdminBookings() {
                   {quotationForm.quotationDetails.items.map((item, index) => (
                     <Card key={index}>
                       <CardContent className="p-4">
-                        <div className="grid grid-cols-12 gap-3 items-end">
-                          <div className="col-span-4">
+                        <div className="grid gap-3 md:grid-cols-12 md:items-end">
+                          <div className="md:col-span-4">
                             <Label htmlFor={`service-${index}`}>Service</Label>
                             <Input
                               id={`service-${index}`}
@@ -909,7 +909,7 @@ export default function AdminBookings() {
                               onChange={(e) => updateQuotationItem(index, 'service', e.target.value)}
                             />
                           </div>
-                          <div className="col-span-2">
+                          <div className="md:col-span-2">
                             <Label htmlFor={`price-${index}`}>Price ($)</Label>
                             <Input
                               id={`price-${index}`}
@@ -919,7 +919,7 @@ export default function AdminBookings() {
                               onChange={(e) => updateQuotationItem(index, 'price', e.target.value)}
                             />
                           </div>
-                          <div className="col-span-5">
+                          <div className="md:col-span-5">
                             <Label htmlFor={`description-${index}`}>Description</Label>
                             <Input
                               id={`description-${index}`}
@@ -928,7 +928,7 @@ export default function AdminBookings() {
                               onChange={(e) => updateQuotationItem(index, 'description', e.target.value)}
                             />
                           </div>
-                          <div className="col-span-1">
+                          <div className="md:col-span-1">
                             {quotationForm.quotationDetails.items.length > 1 && (
                               <Button
                                 type="button"

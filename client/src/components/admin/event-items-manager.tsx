@@ -179,7 +179,7 @@ export function EventItemsManager() {
         </div>
         <div className="flex gap-2">
           <Select onValueChange={(value) => setSelectedEventTypeId(Number(value))}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder={t("adminBundles.selectEventType")} />
             </SelectTrigger>
             <SelectContent>

@@ -611,7 +611,9 @@
   "adminUsers": {
     "title": "User Management",
     "createAdmin": "Create Admin User",
+    "createAdminDescription": "Create an admin account using phone number as the primary login.",
     "editPermissions": "Edit Permissions",
+    "editPermissionsDescription": "Choose which admin areas this user can access.",
     "deleteAdmin": "Delete Admin",
     "fullName": "Full Name",
     "email": "Email",

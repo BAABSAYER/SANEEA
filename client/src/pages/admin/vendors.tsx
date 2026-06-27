@@ -262,7 +262,7 @@ export default function AdminVendors() {
 
               <div className="flex gap-2 items-center">
                 <Select value={categoryFilter || ""} onValueChange={(value) => setCategoryFilter(value || null)}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder={t("adminVendors.filterByCategory")} />
                   </SelectTrigger>
                   <SelectContent>
