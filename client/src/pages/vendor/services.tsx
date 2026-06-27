@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
+import { useTranslation } from "react-i18next";
 
 type VendorService = {
   id: number;
@@ -31,6 +32,7 @@ type VendorService = {
 export default function VendorServices() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   
   // Redirect to regular dashboard if not a vendor
   useEffect(() => {
@@ -55,18 +57,18 @@ export default function VendorServices() {
   
   return (
     <div className="pb-20">
-      <Header title="My Services" showBack={true} showSearch={false} />
+      <Header title={t("vendorServices.title")} showBack={true} showSearch={false} />
       
       <div className="px-5 pt-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-bold text-lg text-foreground">Services & Packages</h2>
+          <h2 className="font-bold text-lg text-foreground">{t("vendorServices.servicesAndPackages")}</h2>
           <Button 
             onClick={handleAddService}
             className="bg-primary text-primary-foreground"
             size="sm"
           >
             <Plus className="h-4 w-4 mr-1" />
-            Add New
+            {t("vendorServices.addNew")}
           </Button>
         </div>
         
@@ -89,30 +91,30 @@ export default function VendorServices() {
         ) : (
           <div className="bg-white rounded-xl p-6 text-center shadow-sm">
             <Package className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
-            <h3 className="font-medium text-lg text-neutral-800 mb-2">No Services Yet</h3>
+            <h3 className="font-medium text-lg text-neutral-800 mb-2">{t("vendorServices.noServices")}</h3>
             <p className="text-neutral-600 mb-4">
-              Add services or packages that you offer to attract more clients.
+              {t("vendorServices.noServicesDescription")}
             </p>
             <Button 
               onClick={handleAddService}
               className="bg-primary text-primary-foreground"
             >
               <Plus className="h-4 w-4 mr-1" />
-              Add Your First Service
+              {t("vendorServices.addFirstService")}
             </Button>
           </div>
         )}
         
         <div className="mt-8">
-          <h3 className="font-bold text-lg text-foreground mb-3">Tips for creating great services</h3>
+          <h3 className="font-bold text-lg text-foreground mb-3">{t("vendorServices.tipsTitle")}</h3>
           <Card className="bg-blue-50 border-blue-100">
             <CardContent className="p-4">
               <ul className="space-y-2 text-sm text-blue-800">
-                <li>• Be specific about what's included in each package</li>
-                <li>• Differentiate your basic, standard, and premium offerings</li>
-                <li>• Include high-quality photos of your work</li>
-                <li>• Mention any special skills or equipment you use</li>
-                <li>• Be transparent about pricing and any additional costs</li>
+                <li>{t("vendorServices.tipIncluded")}</li>
+                <li>{t("vendorServices.tipDifferentiate")}</li>
+                <li>{t("vendorServices.tipPhotos")}</li>
+                <li>{t("vendorServices.tipSkills")}</li>
+                <li>{t("vendorServices.tipPricing")}</li>
               </ul>
             </CardContent>
           </Card>
@@ -125,14 +127,14 @@ export default function VendorServices() {
             onClick={() => navigate("/vendor/dashboard")}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Dashboard
+            {t("vendorDashboard.dashboard")}
           </Button>
           <Button
             className="flex-1 bg-primary text-primary-foreground ml-2"
             onClick={handleAddService}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Add Service
+            {t("vendorServices.addService")}
           </Button>
         </div>
       </div>
@@ -141,6 +143,8 @@ export default function VendorServices() {
 }
 
 function ServiceCard({ service, onEdit }: { service: VendorService, onEdit: () => void }) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm">
       <div className="h-40 bg-neutral-200 relative">
@@ -164,7 +168,7 @@ function ServiceCard({ service, onEdit }: { service: VendorService, onEdit: () =
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="h-4 w-4 mr-2" />
-                Edit
+                {t("common.edit")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -175,25 +179,25 @@ function ServiceCard({ service, onEdit }: { service: VendorService, onEdit: () =
           <h3 className="font-medium text-neutral-800">{service.name}</h3>
           <div className="flex items-center">
             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />
-            <span className="text-sm">{service.rating ? service.rating.toFixed(1) : 'New'}</span>
+            <span className="text-sm">{service.rating ? service.rating.toFixed(1) : t("vendorServices.new")}</span>
           </div>
         </div>
         <p className="text-sm text-neutral-600 mb-3 line-clamp-2">{service.description}</p>
         <div className="flex flex-wrap gap-2 mb-3">
           <span className="bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full flex items-center">
             <DollarSign className="h-3 w-3 mr-1" />
-            From ${service.basePrice}
+            {t("vendorServices.fromPrice", { price: service.basePrice ?? 0 })}
           </span>
           {service.maxGuests && (
             <span className="bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full flex items-center">
               <Users className="h-3 w-3 mr-1" />
-              Up to {service.maxGuests} guests
+              {t("vendorServices.upToGuests", { count: service.maxGuests })}
             </span>
           )}
           {(service.bookingCount || 0) > 0 && (
             <span className="bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full flex items-center">
               <Calendar className="h-3 w-3 mr-1" />
-              {service.bookingCount} bookings
+              {t("vendorServices.bookingCount", { count: service.bookingCount })}
             </span>
           )}
         </div>
@@ -204,9 +208,10 @@ function ServiceCard({ service, onEdit }: { service: VendorService, onEdit: () =
           onClick={onEdit}
         >
           <Pencil className="h-3 w-3 mr-1" />
-          Edit Service
+          {t("vendorServices.editService")}
         </Button>
       </div>
     </div>
   );
 }
+

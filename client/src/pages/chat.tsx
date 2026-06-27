@@ -5,6 +5,7 @@ import { ArrowLeft, Phone, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 interface User {
   id: number;
@@ -20,6 +21,7 @@ export default function Chat() {
   const params = useParams<{ userId: string }>();
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const userId = params.userId ? parseInt(params.userId) : 0;
   
   const { data: recipient, isLoading } = useQuery<User>({
@@ -85,10 +87,10 @@ export default function Chat() {
           {getUserAvatar()}
           <div>
             <p className="font-medium text-neutral-800">
-              {isLoading ? "Loading..." : (recipient && (recipient.fullName || recipient.username)) || "User"}
+              {isLoading ? t("common.loading") : (recipient && (recipient.fullName || recipient.username)) || t("adminChat.userFallback")}
             </p>
             <p className={`text-xs ${isOnline ? 'text-green-500' : 'text-neutral-500'}`}>
-              {isOnline ? 'Online' : 'Offline'}
+              {isOnline ? t("chat.online") : t("adminChat.offline")}
             </p>
           </div>
         </div>

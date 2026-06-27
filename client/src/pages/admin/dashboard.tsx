@@ -281,9 +281,11 @@ export default function AdminDashboard() {
                               {index + 1}
                             </div>
                             <div>
-                              <p className="text-sm font-medium">Booking #{booking.id}</p>
+                              <p className="text-sm font-medium">{t('adminDashboard.bookingNumber', { id: booking.id })}</p>
                               <p className="text-xs text-muted-foreground">
-                                Created {booking.createdAt ? format(new Date(booking.createdAt), 'MMM d, yyyy') : 'recently'}
+                                {booking.createdAt
+                                  ? t('adminDashboard.createdOn', { date: format(new Date(booking.createdAt), 'MMM d, yyyy') })
+                                  : t('adminDashboard.createdRecently')}
                               </p>
                             </div>
                           </div>
@@ -321,7 +323,7 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <CardTitle>{t('dashboard.quickActions')}</CardTitle>
                   <CardDescription>
-                    Common administrative tasks
+                    {t('adminDashboard.quickActionsDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -428,10 +430,10 @@ export default function AdminDashboard() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium leading-none">
-                                Client #{message.sender}
+                                {t('adminDashboard.clientNumber', { id: message.sender })}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {message.timestamp ? format(new Date(message.timestamp), 'dd MMM, HH:mm') : 'Recent'}
+                                {message.timestamp ? format(new Date(message.timestamp), 'dd MMM, HH:mm') : t('chat.now')}
                               </p>
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -444,7 +446,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No recent messages found.</p>
+                    <p className="text-sm text-muted-foreground">{t('adminDashboard.noRecentMessages')}</p>
                   )}
                 </CardContent>
                 <CardFooter>
@@ -459,9 +461,9 @@ export default function AdminDashboard() {
           <TabsContent value="analytics" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Analytics Overview</CardTitle>
+                <CardTitle>{t('adminDashboard.analyticsOverview')}</CardTitle>
                 <CardDescription>
-                  View detailed platform statistics
+                  {t('adminDashboard.analyticsOverviewDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-[400px] flex items-center justify-center">
@@ -479,9 +481,9 @@ export default function AdminDashboard() {
           <TabsContent value="reports" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Reports</CardTitle>
+                <CardTitle>{t('adminDashboard.reports')}</CardTitle>
                 <CardDescription>
-                  View and download platform reports
+                  {t('adminDashboard.reportsOverviewDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-[400px] flex items-center justify-center">

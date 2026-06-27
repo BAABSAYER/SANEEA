@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -26,17 +26,18 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 // Form validation schema
-const profileSchema = z.object({
-  businessName: z.string().min(2, { message: "Business name must be at least 2 characters" }),
-  description: z.string().min(20, { message: "Description must be at least 20 characters" }),
+const createProfileSchema = (t: (key: string) => string) => z.object({
+  businessName: z.string().min(2, { message: t("vendorProfile.businessNameMin") }),
+  description: z.string().min(20, { message: t("vendorProfile.descriptionMin") }),
   phone: z.string().optional(),
   email: z.union([
-    z.string().email({ message: "Please enter a valid email address" }),
+    z.string().email({ message: t("auth.validEmailRequired") }),
     z.literal(""),
   ]).optional(),
-  category: z.string().min(1, { message: "Category is required" }),
+  category: z.string().min(1, { message: t("vendorProfile.categoryRequired") }),
   address: z.string().optional(),
   city: z.string().optional(),
   priceRange: z.string().optional(),
@@ -45,7 +46,7 @@ const profileSchema = z.object({
   attachmentsText: z.string().optional(),
 });
 
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof createProfileSchema>>;
 type VendorProfileData = ProfileFormValues & {
   photos?: string[] | null;
   previousWork?: Array<{ title: string; description?: string | null; url?: string | null; imageUrl?: string | null }> | null;
@@ -89,6 +90,8 @@ export default function VendorProfile() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const profileSchema = useMemo(() => createProfileSchema(t), [t]);
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   
@@ -198,7 +201,7 @@ export default function VendorProfile() {
   if (isLoading) {
     return (
       <div>
-        <Header title="Profile" showBack={true} />
+        <Header title={t("profile.title")} showBack={true} />
         <div className="px-5 py-6">
           <div className="flex flex-col items-center mb-6">
             <Skeleton className="h-24 w-24 rounded-full mb-4" />
@@ -219,7 +222,7 @@ export default function VendorProfile() {
   
   return (
     <div className="pb-24">
-      <Header title="Profile" showBack={true} />
+      <Header title={t("profile.title")} showBack={true} />
       
       <div className="px-5 py-6">
         {isEditing ? (
@@ -261,7 +264,7 @@ export default function VendorProfile() {
               
               {/* Basic Info */}
               <div>
-                <h3 className="font-medium text-neutral-800 mb-4">Business Information</h3>
+                <h3 className="font-medium text-neutral-800 mb-4">{t("vendorProfile.businessInformation")}</h3>
                 
                 <div className="space-y-4">
                   <FormField
@@ -269,7 +272,7 @@ export default function VendorProfile() {
                     name="businessName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Business Name</FormLabel>
+                        <FormLabel>{t("vendorProfile.businessName")}</FormLabel>
                         <FormControl>
                           <Input placeholder="Your business name" {...field} />
                         </FormControl>
@@ -332,7 +335,7 @@ export default function VendorProfile() {
               
               {/* Contact Information */}
               <div>
-                <h3 className="font-medium text-neutral-800 mb-4">Contact Information</h3>
+                <h3 className="font-medium text-neutral-800 mb-4">{t("vendorProfile.contactInformation")}</h3>
                 
                 <div className="space-y-4">
                   <FormField
@@ -399,7 +402,7 @@ export default function VendorProfile() {
               
               {/* Portfolio */}
               <div>
-                <h3 className="font-medium text-neutral-800 mb-4">Portfolio & Attachments</h3>
+                <h3 className="font-medium text-neutral-800 mb-4">{t("vendorProfile.portfolioAndAttachments")}</h3>
                 
                 <div className="space-y-4">
                   <FormField
@@ -421,7 +424,7 @@ export default function VendorProfile() {
                     name="previousWorkText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Previous Work</FormLabel>
+                        <FormLabel>{t("adminVendors.previousWork")}</FormLabel>
                         <FormControl>
                           <Textarea placeholder="Title | link URL | image URL | description" {...field} rows={4} />
                         </FormControl>
@@ -435,7 +438,7 @@ export default function VendorProfile() {
                     name="attachmentsText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Attachments</FormLabel>
+                        <FormLabel>{t("adminVendors.attachments")}</FormLabel>
                         <FormControl>
                           <Textarea placeholder="File URL | file name | description" {...field} rows={4} />
                         </FormControl>
@@ -454,14 +457,14 @@ export default function VendorProfile() {
                   className="flex-1"
                   onClick={() => setIsEditing(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button 
                   type="submit" 
                   className="flex-1 bg-primary text-primary-foreground"
                   disabled={profileMutation.isPending}
                 >
-                  {profileMutation.isPending ? "Saving..." : "Save Changes"}
+                  {profileMutation.isPending ? t("vendorProfile.saving") : t("profile.saveChanges")}
                 </Button>
               </div>
             </form>
@@ -477,10 +480,10 @@ export default function VendorProfile() {
                 </AvatarFallback>
               </Avatar>
               <h2 className="font-bold text-xl text-foreground mb-1">
-                {vendorProfile?.businessName || "Your Business"}
+                {vendorProfile?.businessName || t("vendorProfile.yourBusiness")}
               </h2>
               <p className="text-neutral-600 text-center mb-4">
-                {[vendorProfile?.category, vendorProfile?.priceRange].filter(Boolean).join(" · ") || "No category added"}
+                {[vendorProfile?.category, vendorProfile?.priceRange].filter(Boolean).join(" · ") || t("vendorProfile.noCategoryAdded")}
               </p>
               <Button
                 variant="outline"
@@ -489,7 +492,7 @@ export default function VendorProfile() {
                 onClick={() => setIsEditing(true)}
               >
                 <Edit2 className="h-4 w-4 mr-2" />
-                Edit Profile
+                {t("profile.editProfile")}
               </Button>
             </div>
             
@@ -497,9 +500,9 @@ export default function VendorProfile() {
             
             {/* Business Description */}
             <div className="mb-6">
-              <h3 className="font-medium text-neutral-800 mb-2">About</h3>
+              <h3 className="font-medium text-neutral-800 mb-2">{t("vendorProfile.about")}</h3>
               <p className="text-neutral-700">
-                {vendorProfile?.description || "No description added yet."}
+                {vendorProfile?.description || t("adminVendors.noDescriptionAdded")}
               </p>
             </div>
             
@@ -507,26 +510,26 @@ export default function VendorProfile() {
 
             {/* Portfolio */}
             <div className="mb-6">
-              <h3 className="font-medium text-neutral-800 mb-3">Previous Work</h3>
+              <h3 className="font-medium text-neutral-800 mb-3">{t("adminVendors.previousWork")}</h3>
               {vendorProfile?.previousWork?.length ? (
                 <div className="space-y-3">
                   {vendorProfile.previousWork.map((item, index) => (
                     <div key={`${item.title}-${index}`} className="rounded-lg border bg-white p-4">
                       <h4 className="font-medium text-neutral-800">{item.title}</h4>
                       {item.description ? <p className="text-sm text-neutral-600 mt-1">{item.description}</p> : null}
-                      {item.url ? <a className="text-sm text-primary mt-2 inline-block" href={item.url} target="_blank" rel="noreferrer">Open work link</a> : null}
+                      {item.url ? <a className="text-sm text-primary mt-2 inline-block" href={item.url} target="_blank" rel="noreferrer">{t("adminVendors.openWorkLink")}</a> : null}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-neutral-600">No previous work added yet.</p>
+                <p className="text-neutral-600">{t("adminVendors.noPreviousWorkAdded")}</p>
               )}
             </div>
 
             <Separator className="mb-6" />
 
             <div className="mb-6">
-              <h3 className="font-medium text-neutral-800 mb-3">Attachments</h3>
+              <h3 className="font-medium text-neutral-800 mb-3">{t("adminVendors.attachments")}</h3>
               {vendorProfile?.attachments?.length ? (
                 <div className="space-y-2">
                   {vendorProfile.attachments.map((attachment, index) => (
@@ -542,7 +545,7 @@ export default function VendorProfile() {
                   ))}
                 </div>
               ) : (
-                <p className="text-neutral-600">No attachments added yet.</p>
+                <p className="text-neutral-600">{t("adminVendors.noAttachmentsAdded")}</p>
               )}
             </div>
             
@@ -550,17 +553,17 @@ export default function VendorProfile() {
             
             {/* Contact Information */}
             <div className="mb-6">
-              <h3 className="font-medium text-neutral-800 mb-4">Contact Information</h3>
+              <h3 className="font-medium text-neutral-800 mb-4">{t("vendorProfile.contactInformation")}</h3>
               
               <div className="space-y-3">
                 <div className="flex items-center">
                   <Mail className="h-5 w-5 text-neutral-500 mr-3" />
-                  <span>{vendorProfile?.email || "No email added"}</span>
+                  <span>{vendorProfile?.email || t("vendorProfile.noEmailAdded")}</span>
                 </div>
                 
                 <div className="flex items-center">
                   <Phone className="h-5 w-5 text-neutral-500 mr-3" />
-                  <span>{vendorProfile?.phone || "No phone added"}</span>
+                  <span>{vendorProfile?.phone || t("vendorProfile.noPhoneAdded")}</span>
                 </div>
                 
                 <div className="flex items-center">
@@ -568,7 +571,7 @@ export default function VendorProfile() {
                   <span>
                     {vendorProfile?.address && vendorProfile?.city 
                       ? `${vendorProfile.address}, ${vendorProfile.city}`
-                      : "No address added"}
+                      : t("vendorProfile.noAddressAdded")}
                   </span>
                 </div>
               </div>
@@ -581,14 +584,14 @@ export default function VendorProfile() {
                 onClick={() => navigate("/vendor/dashboard")}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Dashboard
+                {t("vendorDashboard.dashboard")}
               </Button>
               <Button
                 className="flex-1 bg-primary text-primary-foreground ml-2"
                 onClick={() => setIsEditing(true)}
               >
                 <Edit2 className="h-4 w-4 mr-1" />
-                Edit Profile
+                {t("profile.editProfile")}
               </Button>
             </div>
           </div>

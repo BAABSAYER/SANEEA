@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -79,30 +79,30 @@ interface EventType {
   description: string;
 }
 
-const bundleSchema = z.object({
+const createBundleSchema = (t: (key: string) => string) => z.object({
   eventTypeId: z.number(),
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, t('adminBundles.validationNameRequired')),
   tier: z.enum(['cheap', 'mid', 'high']),
-  description: z.string().min(1, 'Description is required'),
-  basePrice: z.number().min(0, 'Price must be positive'),
-  totalQuantity: z.number().min(1, 'Quantity must be at least 1'),
-  features: z.string().min(1, 'Features are required'),
+  description: z.string().min(1, t('adminBundles.validationDescriptionRequired')),
+  basePrice: z.number().min(0, t('adminBundles.validationPricePositive')),
+  totalQuantity: z.number().min(1, t('adminBundles.validationQuantityMin')),
+  features: z.string().min(1, t('adminBundles.validationFeaturesRequired')),
   images: z.string().optional().default(''),
   videos: z.string().optional().default(''),
   isActive: z.boolean(),
 });
 
-const optionSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  price: z.number().min(0, 'Price must be positive'),
+const createOptionSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t('adminBundles.validationNameRequired')),
+  description: z.string().min(1, t('adminBundles.validationDescriptionRequired')),
+  price: z.number().min(0, t('adminBundles.validationPricePositive')),
   isRequired: z.boolean(),
-  maxQuantity: z.number().min(1, 'Max quantity must be at least 1'),
+  maxQuantity: z.number().min(1, t('adminBundles.validationMaxQuantityMin')),
   isActive: z.boolean(),
 });
 
-type BundleFormData = z.infer<typeof bundleSchema>;
-type OptionFormData = z.infer<typeof optionSchema>;
+type BundleFormData = z.infer<ReturnType<typeof createBundleSchema>>;
+type OptionFormData = z.infer<ReturnType<typeof createOptionSchema>>;
 
 function parseUrlLines(value?: string) {
   return (value || '').split('\n').map((item) => item.trim()).filter(Boolean);
@@ -151,6 +151,8 @@ async function uploadAdminMedia(file: File, folder: string) {
 
 export function BundleManagement() {
   const { t } = useTranslation();
+  const bundleSchema = useMemo(() => createBundleSchema(t), [t]);
+  const optionSchema = useMemo(() => createOptionSchema(t), [t]);
   const [selectedBundle, setSelectedBundle] = useState<EventBundle | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);

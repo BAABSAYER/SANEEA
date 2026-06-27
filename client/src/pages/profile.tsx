@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
 
 async function readOptionalJson(res: Response) {
   const text = await res.text();
@@ -25,6 +26,7 @@ async function readOptionalJson(res: Response) {
 export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [profileData, setProfileData] = useState({
     fullName: user?.fullName || "",
     email: user?.email || "",
@@ -53,8 +55,8 @@ export default function Profile() {
     },
     onSuccess: (updatedUser) => {
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        title: t("profile.profileUpdated"),
+        description: t("profile.profileUpdatedDescription"),
       });
       if (updatedUser) {
         queryClient.setQueryData(["/api/user"], updatedUser);
@@ -63,7 +65,7 @@ export default function Profile() {
     },
     onError: (error) => {
       toast({
-        title: "Failed to update profile",
+        title: t("profile.profileUpdateError"),
         description: error.message,
         variant: "destructive",
       });
@@ -81,8 +83,8 @@ export default function Profile() {
     },
     onSuccess: () => {
       toast({
-        title: "Password changed",
-        description: "Your password has been changed successfully",
+        title: t("profile.passwordChanged"),
+        description: t("profile.passwordChangedDescription"),
       });
       setPasswordData({
         currentPassword: "",
@@ -92,7 +94,7 @@ export default function Profile() {
     },
     onError: (error) => {
       toast({
-        title: "Failed to change password",
+        title: t("profile.passwordChangeError"),
         description: error.message,
         variant: "destructive",
       });
@@ -109,8 +111,8 @@ export default function Profile() {
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
-        title: "Passwords don't match",
-        description: "New password and confirmation don't match",
+        title: t("profile.passwordsDoNotMatch"),
+        description: t("profile.passwordsDoNotMatchDescription"),
         variant: "destructive",
       });
       return;
@@ -118,8 +120,8 @@ export default function Profile() {
     
     if (passwordData.newPassword.length < 8) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long",
+        title: t("profile.passwordTooShort"),
+        description: t("profile.passwordTooShortDescription"),
         variant: "destructive",
       });
       return;
@@ -132,26 +134,26 @@ export default function Profile() {
   };
 
   return (
-    <AdminLayout title="Profile">
+    <AdminLayout title={t("profile.title")}>
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Account Information</CardTitle>
+            <CardTitle>{t("profile.accountInformation")}</CardTitle>
             <CardDescription>
-              Update your account details
+              {t("profile.updateAccountDetails")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="profile" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="password">Password</TabsTrigger>
+                <TabsTrigger value="profile">{t("profile.title")}</TabsTrigger>
+                <TabsTrigger value="password">{t("auth.password")}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="profile">
                 <form onSubmit={handleProfileUpdate} className="space-y-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">{t("profile.fullName")}</Label>
                     <Input
                       id="fullName"
                       value={profileData.fullName}
@@ -162,7 +164,7 @@ export default function Profile() {
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("profile.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -174,7 +176,7 @@ export default function Profile() {
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t("profile.phoneNumber")}</Label>
                     <Input
                       id="phone"
                       value={profileData.phone}
@@ -188,7 +190,7 @@ export default function Profile() {
                     type="submit" 
                     disabled={updateProfileMutation.isPending}
                   >
-                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                    {updateProfileMutation.isPending ? t("vendorProfile.saving") : t("profile.saveChanges")}
                   </Button>
                 </form>
               </TabsContent>
@@ -196,7 +198,7 @@ export default function Profile() {
               <TabsContent value="password">
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Label htmlFor="currentPassword">{t("profile.currentPassword")}</Label>
                     <Input
                       id="currentPassword"
                       type="password"
@@ -210,7 +212,7 @@ export default function Profile() {
                   <Separator />
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="newPassword">New Password</Label>
+                    <Label htmlFor="newPassword">{t("profile.newPassword")}</Label>
                     <Input
                       id="newPassword"
                       type="password"
@@ -222,7 +224,7 @@ export default function Profile() {
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">{t("profile.confirmNewPassword")}</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -237,7 +239,7 @@ export default function Profile() {
                     type="submit" 
                     disabled={changePasswordMutation.isPending}
                   >
-                    {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+                    {changePasswordMutation.isPending ? t("profile.changing") : t("profile.changePassword")}
                   </Button>
                 </form>
               </TabsContent>

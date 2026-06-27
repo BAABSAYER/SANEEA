@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { Vendor } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface VendorCardProps {
   vendor: Vendor;
@@ -7,6 +8,8 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor, onClick }: VendorCardProps) {
+  const { t } = useTranslation();
+
   // Use first image from vendor's photos array, or a fallback
   const coverImage = vendor.photos && Array.isArray(vendor.photos) && vendor.photos.length > 0
     ? vendor.photos[0]
@@ -24,7 +27,7 @@ export function VendorCard({ vendor, onClick }: VendorCardProps) {
         ></div>
         <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium text-foreground flex items-center gap-1">
           <Star className="h-3 w-3 text-secondary fill-secondary" />
-          <span>{vendor.rating ? vendor.rating.toFixed(1) : 'New'}</span>
+          <span>{vendor.rating ? vendor.rating.toFixed(1) : t("vendorServices.new")}</span>
         </div>
       </div>
       <div className="p-4">
@@ -32,16 +35,16 @@ export function VendorCard({ vendor, onClick }: VendorCardProps) {
           <div>
             <h3 className="font-bold text-foreground">{vendor.businessName}</h3>
             <p className="text-sm text-muted-foreground mb-1">
-              {getCategoryName(vendor.category)}
+              {getCategoryName(vendor.category, t)}
               {vendor.city && ` • ${vendor.city}`}
             </p>
             <div className="flex items-center text-sm text-muted-foreground">
               {vendor.priceRange && <span className="mr-2">{vendor.priceRange}</span>}
-              {vendor.capacity && <span>Up to {vendor.capacity} guests</span>}
+              {vendor.capacity && <span>{t("vendorServices.upToGuests", { count: vendor.capacity })}</span>}
             </div>
           </div>
           <button className="bg-primary text-primary-foreground text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors">
-            View
+            {t("common.viewDetails")}
           </button>
         </div>
       </div>
@@ -50,17 +53,17 @@ export function VendorCard({ vendor, onClick }: VendorCardProps) {
 }
 
 // Helper functions
-function getCategoryName(category: string): string {
+function getCategoryName(category: string, t: (key: string) => string): string {
   const categoryMap: Record<string, string> = {
-    'venue': 'Venues',
-    'catering': 'Catering',
-    'photography': 'Photography',
-    'decoration': 'Decorations',
-    'entertainment': 'Entertainment',
-    'other': 'Services'
+    'venue': t('serviceCategories.venue'),
+    'catering': t('serviceCategories.catering'),
+    'photography': t('serviceCategories.photography'),
+    'decoration': t('serviceCategories.decoration'),
+    'entertainment': t('serviceCategories.entertainment'),
+    'other': t('navigation.services')
   };
   
-  return categoryMap[category] || 'Services';
+  return categoryMap[category] || t('navigation.services');
 }
 
 function getCategoryFallbackImage(category: string): string {

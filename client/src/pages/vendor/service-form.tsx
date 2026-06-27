@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -36,22 +36,23 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
 import { SERVICE_CATEGORIES } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 // Form validation schema
-const serviceSchema = z.object({
-  name: z.string().min(3, { message: "Service name must be at least 3 characters" }),
-  description: z.string().min(20, { message: "Description must be at least 20 characters" }),
-  category: z.string().min(1, { message: "Please select a category" }),
-  basePrice: z.coerce.number().min(1, { message: "Price must be greater than 0" }),
+const createServiceSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(3, { message: t("vendorServices.serviceNameMin") }),
+  description: z.string().min(20, { message: t("vendorServices.descriptionMin") }),
+  category: z.string().min(1, { message: t("vendorServices.categoryRequired") }),
+  basePrice: z.coerce.number().min(1, { message: t("vendorServices.priceGreaterThanZero") }),
   hasStandardPackage: z.boolean().default(true),
   hasPremuiumPackage: z.boolean().default(true),
-  duration: z.coerce.number().min(1, { message: "Duration must be greater than 0" }).optional(),
-  maxGuests: z.coerce.number().min(1, { message: "Max guests must be greater than 0" }).optional(),
+  duration: z.coerce.number().min(1, { message: t("vendorServices.durationGreaterThanZero") }).optional(),
+  maxGuests: z.coerce.number().min(1, { message: t("vendorServices.maxGuestsGreaterThanZero") }).optional(),
   availability: z.string().optional(),
   additionalInfo: z.string().optional(),
 });
 
-type ServiceFormValues = z.infer<typeof serviceSchema>;
+type ServiceFormValues = z.infer<ReturnType<typeof createServiceSchema>>;
 type ServiceFormData = ServiceFormValues & {
   id?: number;
   images?: string[];
@@ -62,6 +63,8 @@ export default function ServiceForm() {
   const [, navigate] = useLocation();
   const params = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const serviceSchema = useMemo(() => createServiceSchema(t), [t]);
   const serviceId = params.id ? parseInt(params.id) : null;
   const isEditing = !!serviceId;
   
@@ -130,17 +133,17 @@ export default function ServiceForm() {
     },
     onSuccess: () => {
       toast({
-        title: isEditing ? "Service Updated" : "Service Created",
+        title: isEditing ? t("vendorServices.serviceUpdated") : t("vendorServices.serviceCreated"),
         description: isEditing 
-          ? "Your service has been updated successfully." 
-          : "Your new service has been created.",
+          ? t("vendorServices.serviceUpdatedDescription") 
+          : t("vendorServices.serviceCreatedDescription"),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       navigate("/vendor/services");
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
@@ -169,7 +172,7 @@ export default function ServiceForm() {
   if (isLoading && isEditing) {
     return (
       <div>
-        <Header title="Loading Service..." showBack={true} />
+        <Header title={t("vendorServices.loadingService")} showBack={true} />
         <div className="px-5 py-6">
           <Skeleton className="h-8 w-48 mb-6" />
           <Skeleton className="h-32 w-full mb-4" />
@@ -186,18 +189,18 @@ export default function ServiceForm() {
   
   return (
     <div className="pb-24">
-      <Header title={isEditing ? "Edit Service" : "New Service"} showBack={true} />
+      <Header title={isEditing ? t("vendorServices.editService") : t("vendorServices.newService")} showBack={true} />
       
       <div className="px-5 py-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Service Images */}
             <div>
-              <h3 className="font-medium text-neutral-800 mb-2">Service Images</h3>
+              <h3 className="font-medium text-neutral-800 mb-2">{t("vendorServices.serviceImages")}</h3>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-2">
                 {images.map((img, index) => (
                   <div key={index} className="relative h-24 rounded-lg overflow-hidden">
-                    <img src={img} alt={`Service ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={t("vendorServices.serviceImageAlt", { number: index + 1 })} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(index)}
@@ -214,18 +217,18 @@ export default function ServiceForm() {
                     className="h-24 border-2 border-dashed border-neutral-300 rounded-lg flex flex-col items-center justify-center text-neutral-500"
                   >
                     <Camera className="h-6 w-6 mb-1" />
-                    <span className="text-xs">Add Photo</span>
+                    <span className="text-xs">{t("common.uploadPhoto")}</span>
                   </button>
                 )}
               </div>
-              <p className="text-xs text-neutral-500">Add up to 5 images. The first image will be the cover photo.</p>
+              <p className="text-xs text-neutral-500">{t("vendorServices.imageHelp")}</p>
             </div>
             
             <Separator />
             
             {/* Basic Info */}
             <div>
-              <h3 className="font-medium text-neutral-800 mb-4">Basic Information</h3>
+              <h3 className="font-medium text-neutral-800 mb-4">{t("vendorServices.basicInformation")}</h3>
               
               <div className="space-y-4">
                 <FormField
@@ -233,9 +236,9 @@ export default function ServiceForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Service Name</FormLabel>
+                      <FormLabel>{t("vendorServices.serviceName")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Premium Photography Package" {...field} />
+                        <Input placeholder={t("vendorServices.serviceNamePlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -247,10 +250,10 @@ export default function ServiceForm() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t("vendorServices.description")}</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Describe your service in detail..." 
+                          placeholder={t("vendorServices.descriptionPlaceholder")} 
                           {...field} 
                           rows={4}
                         />
@@ -265,20 +268,20 @@ export default function ServiceForm() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>{t("vendorServices.category")}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder={t("auth.selectServiceType")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value={SERVICE_CATEGORIES.VENUE}>Venue</SelectItem>
-                          <SelectItem value={SERVICE_CATEGORIES.CATERING}>Catering</SelectItem>
-                          <SelectItem value={SERVICE_CATEGORIES.PHOTOGRAPHY}>Photography</SelectItem>
-                          <SelectItem value={SERVICE_CATEGORIES.DECORATION}>Decoration</SelectItem>
-                          <SelectItem value={SERVICE_CATEGORIES.ENTERTAINMENT}>Entertainment</SelectItem>
-                          <SelectItem value={SERVICE_CATEGORIES.OTHER}>Other</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.VENUE}>{t("serviceCategories.venue")}</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.CATERING}>{t("serviceCategories.catering")}</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.PHOTOGRAPHY}>{t("serviceCategories.photography")}</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.DECORATION}>{t("serviceCategories.decoration")}</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.ENTERTAINMENT}>{t("serviceCategories.entertainment")}</SelectItem>
+                          <SelectItem value={SERVICE_CATEGORIES.OTHER}>{t("serviceCategories.other")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -292,7 +295,7 @@ export default function ServiceForm() {
             
             {/* Pricing */}
             <div>
-              <h3 className="font-medium text-neutral-800 mb-4">Pricing & Packages</h3>
+              <h3 className="font-medium text-neutral-800 mb-4">{t("vendorServices.pricingAndPackages")}</h3>
               
               <div className="space-y-4">
                 <FormField
@@ -300,7 +303,7 @@ export default function ServiceForm() {
                   name="basePrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Base Price (Basic Package)</FormLabel>
+                      <FormLabel>{t("vendorServices.basePriceBasic")}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-500" />
@@ -308,7 +311,7 @@ export default function ServiceForm() {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        This is the price for your basic package. Standard and Premium package prices will be calculated automatically.
+                        {t("vendorServices.basePriceHelp")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -322,7 +325,7 @@ export default function ServiceForm() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between p-3 rounded-lg border">
                         <div>
-                          <FormLabel className="mb-1">Standard Package</FormLabel>
+                          <FormLabel className="mb-1">{t("vendorServices.standardPackage")}</FormLabel>
                           <FormDescription className="text-xs">
                             1.75x base price
                           </FormDescription>
@@ -343,7 +346,7 @@ export default function ServiceForm() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between p-3 rounded-lg border">
                         <div>
-                          <FormLabel className="mb-1">Premium Package</FormLabel>
+                          <FormLabel className="mb-1">{t("vendorServices.premiumPackage")}</FormLabel>
                           <FormDescription className="text-xs">
                             2.5x base price
                           </FormDescription>
@@ -365,7 +368,7 @@ export default function ServiceForm() {
             
             {/* Additional Details */}
             <div>
-              <h3 className="font-medium text-neutral-800 mb-4">Additional Details</h3>
+              <h3 className="font-medium text-neutral-800 mb-4">{t("vendorServices.additionalDetails")}</h3>
               
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -374,7 +377,7 @@ export default function ServiceForm() {
                     name="duration"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Duration (hours)</FormLabel>
+                        <FormLabel>{t("vendorServices.durationHours")}</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
                         </FormControl>
@@ -388,7 +391,7 @@ export default function ServiceForm() {
                     name="maxGuests"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Max Guests</FormLabel>
+                        <FormLabel>{t("vendorServices.maxGuests")}</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
                         </FormControl>
@@ -403,9 +406,9 @@ export default function ServiceForm() {
                   name="availability"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Availability</FormLabel>
+                      <FormLabel>{t("vendorServices.availability")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Weekends only, All days, etc." {...field} />
+                        <Input placeholder={t("vendorServices.availabilityPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -417,10 +420,10 @@ export default function ServiceForm() {
                   name="additionalInfo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Information</FormLabel>
+                      <FormLabel>{t("vendorServices.additionalInformation")}</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Any other details clients should know..." 
+                          placeholder={t("vendorServices.additionalInfoPlaceholder")} 
                           {...field} 
                           rows={3}
                         />
@@ -440,14 +443,14 @@ export default function ServiceForm() {
                 className="flex-1"
                 onClick={() => navigate("/vendor/services")}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button 
                 type="submit" 
                 className="flex-1 bg-primary text-primary-foreground"
                 disabled={serviceMutation.isPending}
               >
-                {serviceMutation.isPending ? "Saving..." : isEditing ? "Update Service" : "Create Service"}
+                {serviceMutation.isPending ? t("vendorProfile.saving") : isEditing ? t("vendorServices.updateService") : t("vendorServices.createService")}
               </Button>
             </div>
           </form>

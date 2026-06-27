@@ -7,6 +7,7 @@ import { Loader2, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 
 interface ChatWindowProps {
   recipientId: number;
@@ -31,6 +32,7 @@ interface MessageInputProps {
 
 function MessageInput({ onSend, isLoading }: MessageInputProps) {
   const [message, setMessage] = useState("");
+  const { t } = useTranslation();
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ function MessageInput({ onSend, isLoading }: MessageInputProps) {
     <form onSubmit={handleSubmit} className="bg-white p-3 shadow-md">
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Type a message..."
+          placeholder={t("chat.typeMessage")}
           className="min-w-0 flex-1 bg-neutral-100 px-4 py-2 rounded-full"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -68,6 +70,7 @@ function MessageInput({ onSend, isLoading }: MessageInputProps) {
 
 export function ChatWindow({ recipientId }: ChatWindowProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { sendMessage, getConversationMessages, status } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -187,7 +190,7 @@ export function ChatWindow({ recipientId }: ChatWindowProps) {
                   message.createdAt ? new Date(message.createdAt) : new Date();
       return formatRelative(time, new Date());
     } catch (error) {
-      return 'now';
+      return t("chat.now");
     }
   };
   
@@ -199,7 +202,7 @@ export function ChatWindow({ recipientId }: ChatWindowProps) {
       <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <h3 className="font-medium text-neutral-800">
-            {(recipient as any)?.username || 'Chat'}
+            {(recipient as any)?.username || t("chat.title")}
           </h3>
           <div className={`w-2 h-2 rounded-full ${
             status === 'open' ? 'bg-green-500' : 
@@ -207,9 +210,9 @@ export function ChatWindow({ recipientId }: ChatWindowProps) {
             'bg-gray-400'
           }`} />
           <span className="text-xs text-neutral-500">
-            {status === 'open' ? 'Connected' : 
-             status === 'connecting' ? 'Connecting...' : 
-             'Offline'}
+            {status === 'open' ? t("chat.connected") : 
+             status === 'connecting' ? t("chat.connecting") : 
+             t("adminChat.offline")}
           </span>
         </div>
       </div>
@@ -222,7 +225,7 @@ export function ChatWindow({ recipientId }: ChatWindowProps) {
           </div>
         ) : sortedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-neutral-500">
-            <p>No messages yet. Say hello!</p>
+            <p>{t("chat.noMessagesSayHello")}</p>
           </div>
         ) : (
           sortedMessages.map((message, index) => {

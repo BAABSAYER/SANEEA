@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "react-i18next";
 
 type VendorDashboardData = {
   stats?: {
@@ -33,6 +34,7 @@ type RecentBooking = {
 export default function VendorDashboard() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   
   // Redirect to regular dashboard if not a vendor
   useEffect(() => {
@@ -72,30 +74,30 @@ export default function VendorDashboard() {
     <div className="px-5 py-6 pb-24 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-bold text-2xl text-foreground">Vendor Dashboard</h1>
-        <p className="text-neutral-600">Manage your business, bookings, and services</p>
+        <h1 className="font-bold text-2xl text-foreground">{t("vendorDashboard.title")}</h1>
+        <p className="text-neutral-600">{t("vendorDashboard.subtitle")}</p>
       </div>
       
       {/* Quick Links */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 mb-6">
         <QuickLink 
           icon={<Store className="h-5 w-5" />} 
-          label="Services" 
+          label={t("navigation.services")} 
           onClick={() => navigate("/vendor/services")} 
         />
         <QuickLink 
           icon={<Calendar className="h-5 w-5" />} 
-          label="Bookings" 
+          label={t("navigation.bookings")} 
           onClick={() => navigate("/vendor/bookings")} 
         />
         <QuickLink 
           icon={<MessageSquare className="h-5 w-5" />} 
-          label="Messages" 
+          label={t("navigation.messages")} 
           onClick={() => navigate("/vendor/messages")}
         />
         <QuickLink 
           icon={<Settings className="h-5 w-5" />} 
-          label="Settings" 
+          label={t("navigation.settings")} 
           onClick={() => navigate("/vendor/profile")} 
         />
       </div>
@@ -103,31 +105,31 @@ export default function VendorDashboard() {
       {/* Overview Stats */}
       <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-bold text-lg text-foreground">Overview</h2>
+          <h2 className="font-bold text-lg text-foreground">{t("dashboard.overview")}</h2>
           <Button variant="outline" size="sm" className="text-sm">
-            View Reports
+            {t("vendorDashboard.viewReports")}
           </Button>
         </div>
         
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard 
             icon={<DollarSign className="h-5 w-5 text-green-500" />}
-            label="Total Revenue"
+            label={t("vendorDashboard.totalRevenue")}
             value={`$${stats.totalEarnings.toLocaleString()}`}
           />
           <StatCard 
             icon={<Calendar className="h-5 w-5 text-blue-500" />}
-            label="Total Bookings"
+            label={t("vendorDashboard.totalBookings")}
             value={stats.totalBookings.toString()}
           />
           <StatCard 
             icon={<Clock className="h-5 w-5 text-orange-500" />}
-            label="Pending Bookings"
+            label={t("vendorDashboard.pendingBookings")}
             value={stats.pendingBookings.toString()}
           />
           <StatCard 
             icon={<TrendingUp className="h-5 w-5 text-purple-500" />}
-            label="Rating"
+            label={t("vendorDashboard.rating")}
             value={`${stats.avgRating.toFixed(1)} (${stats.totalReviews})`}
           />
         </div>
@@ -136,14 +138,14 @@ export default function VendorDashboard() {
       {/* Recent Bookings */}
       <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-bold text-lg text-foreground">Recent Bookings</h2>
+          <h2 className="font-bold text-lg text-foreground">{t("vendorDashboard.recentBookings")}</h2>
           <Button 
             variant="link" 
             size="sm" 
             className="text-sm text-primary"
             onClick={() => navigate("/vendor/bookings")}
           >
-            View All
+            {t("common.viewAll")}
           </Button>
         </div>
         
@@ -169,7 +171,7 @@ export default function VendorDashboard() {
                     <Users className="h-5 w-5 text-neutral-500" />
                   </div>
                   <div>
-                    <p className="font-medium text-neutral-800">{booking.clientName || 'Client'}</p>
+                    <p className="font-medium text-neutral-800">{booking.clientName || t("vendorBookings.clientName")}</p>
                     <p className="text-sm text-neutral-600">
                       {booking.eventType} • {new Date(booking.eventDate).toLocaleDateString()}
                     </p>
@@ -182,7 +184,7 @@ export default function VendorDashboard() {
         ) : (
           <div className="py-6 text-center">
             <Package className="h-10 w-10 text-neutral-300 mx-auto mb-2" />
-            <p className="text-neutral-600">No bookings yet</p>
+            <p className="text-neutral-600">{t("vendorBookings.noBookingsYet")}</p>
           </div>
         )}
         
@@ -191,7 +193,7 @@ export default function VendorDashboard() {
             className="w-full mt-4 bg-primary text-primary-foreground"
             onClick={() => navigate("/vendor/bookings")}
           >
-            Manage All Bookings
+            {t("vendorDashboard.manageAllBookings")}
           </Button>
         )}
       </div>
@@ -203,7 +205,7 @@ export default function VendorDashboard() {
           className="bg-primary text-primary-foreground"
         >
           <Package className="h-5 w-5 mr-2" />
-          Add New Service
+          {t("vendorServices.addNewService")}
         </Button>
       </div>
     </div>
@@ -237,6 +239,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
 }
 
 function BookingStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   let color, textColor, bgColor;
   
   switch (status.toLowerCase()) {
@@ -268,7 +271,7 @@ function BookingStatusBadge({ status }: { status: string }) {
   
   return (
     <span className={`${bgColor} ${textColor} text-xs px-2 py-1 rounded-full font-medium capitalize`}>
-      {status}
+      {t(`bookingStatus.${status}`, { defaultValue: status })}
     </span>
   );
 }

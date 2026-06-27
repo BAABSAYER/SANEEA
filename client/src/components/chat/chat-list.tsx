@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Building, User, Camera, Utensils, Gift, MessageSquareMore, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface Conversation {
   userId: number;
@@ -27,6 +28,7 @@ export function ChatList() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const { data: conversations, isLoading, error } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations'],
@@ -40,8 +42,8 @@ export function ChatList() {
   // Show toast on error
   if (error) {
     toast({
-      title: "Failed to load conversations",
-      description: "There was an error loading your messages. Please try again later.",
+      title: t("chat.loadConversationsFailed"),
+      description: t("chat.loadConversationsFailedDescription"),
       variant: "destructive",
     });
     console.error("Error loading conversations:", error);
@@ -102,7 +104,7 @@ export function ChatList() {
       <div className="bg-white px-5 py-3 shadow-sm">
         <div className="relative">
           <Input 
-            placeholder="Search conversations..." 
+            placeholder={t("chat.searchConversations")}
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -123,16 +125,16 @@ export function ChatList() {
         {hasError && (
           <div className="p-10 flex flex-col items-center justify-center text-center">
             <AlertCircle className="text-red-500 h-10 w-10 mb-3" />
-            <p className="text-neutral-700 font-medium">Could not load conversations</p>
-            <p className="text-neutral-500 text-sm mt-1">Please try again later</p>
+            <p className="text-neutral-700 font-medium">{t("chat.couldNotLoadConversations")}</p>
+            <p className="text-neutral-500 text-sm mt-1">{t("chat.tryAgainLater")}</p>
           </div>
         )}
 
         {!isLoading && !hasError && (!filteredConversations || filteredConversations.length === 0) && (
           <div className="p-10 flex flex-col items-center justify-center text-center">
             <MessageSquareMore className="text-neutral-400 h-10 w-10 mb-3" />
-            <p className="text-neutral-700 font-medium">No conversations yet</p>
-            <p className="text-neutral-500 text-sm mt-1">Messages will appear here</p>
+            <p className="text-neutral-700 font-medium">{t("chat.noConversations")}</p>
+            <p className="text-neutral-500 text-sm mt-1">{t("chat.messagesWillAppear")}</p>
           </div>
         )}
 
@@ -152,7 +154,7 @@ export function ChatList() {
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center justify-between gap-3">
                   <p className="truncate font-medium text-neutral-800">
-                    {conversation.fullName || conversation.username || "Unknown User"}
+                    {conversation.fullName || conversation.username || t("adminUsers.unknownUser")}
                   </p>
                   {conversation.lastMessage && (
                     <p className="shrink-0 text-xs text-neutral-500">
@@ -163,9 +165,9 @@ export function ChatList() {
                 <p className="text-sm text-neutral-600 truncate">
                   {conversation.lastMessage 
                     ? (conversation.lastMessage.senderId === user?.id 
-                        ? "You: " 
+                        ? `${t("chat.you")}: ` 
                         : "") + conversation.lastMessage.content
-                    : "Start a conversation"}
+                    : t("chat.startConversation")}
                 </p>
                 {conversation.phone && (
                   <p className="text-xs text-neutral-500 mt-0.5 dir-ltr">

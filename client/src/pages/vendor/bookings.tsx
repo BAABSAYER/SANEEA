@@ -27,6 +27,7 @@ import {
 import { Booking } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type FilterTab = "upcoming" | "pending" | "past" | "all";
 type VendorBooking = Booking & {
@@ -39,6 +40,7 @@ type VendorBooking = Booking & {
 export default function VendorBookings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<FilterTab>("upcoming");
   const [selectedBooking, setSelectedBooking] = useState<VendorBooking | null>(null);
@@ -66,14 +68,14 @@ export default function VendorBookings() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "Booking updated", description: "The booking status was updated successfully." });
+      toast({ title: t("vendorBookings.bookingUpdated"), description: t("vendorBookings.bookingUpdatedDescription") });
       setSelectedBooking(null);
       queryClient.invalidateQueries({ queryKey: ['/api/vendor/bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/bookings/recent'] });
       queryClient.invalidateQueries({ queryKey: ['/api/vendors/dashboard'] });
     },
     onError: (error) => {
-      toast({ title: "Could not update booking", description: error.message, variant: "destructive" });
+      toast({ title: t("vendorBookings.bookingUpdateError"), description: error.message, variant: "destructive" });
     },
   });
   
@@ -82,22 +84,22 @@ export default function VendorBookings() {
   
   return (
     <div className="pb-20">
-      <Header title="Bookings" showBack={true} showSearch={false} />
+      <Header title={t("vendorBookings.title")} showBack={true} showSearch={false} />
       
       <div className="px-5 pt-4">
         <Tabs defaultValue="upcoming" className="w-full" onValueChange={(value) => setActiveTab(value as FilterTab)}>
           <TabsList className="mb-4 flex w-full justify-start overflow-x-auto">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="upcoming">{t("vendorBookings.upcoming")}</TabsTrigger>
+            <TabsTrigger value="pending">{t("vendorBookings.pending")}</TabsTrigger>
+            <TabsTrigger value="past">{t("vendorBookings.past")}</TabsTrigger>
+            <TabsTrigger value="all">{t("vendorBookings.all")}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="upcoming" className="mt-0">
             <BookingsList 
               bookings={filteredBookings} 
               isLoading={isLoading} 
-              emptyMessage="No upcoming bookings" 
+              emptyMessage={t("vendorBookings.noUpcomingBookings")} 
               onSelect={setSelectedBooking}
             />
           </TabsContent>
@@ -106,7 +108,7 @@ export default function VendorBookings() {
             <BookingsList 
               bookings={filteredBookings} 
               isLoading={isLoading} 
-              emptyMessage="No pending bookings" 
+              emptyMessage={t("vendorBookings.noPendingBookings")} 
               onSelect={setSelectedBooking}
             />
           </TabsContent>
@@ -115,7 +117,7 @@ export default function VendorBookings() {
             <BookingsList 
               bookings={filteredBookings} 
               isLoading={isLoading} 
-              emptyMessage="No past bookings" 
+              emptyMessage={t("vendorBookings.noPastBookings")} 
               onSelect={setSelectedBooking}
             />
           </TabsContent>
@@ -124,7 +126,7 @@ export default function VendorBookings() {
             <BookingsList 
               bookings={filteredBookings} 
               isLoading={isLoading} 
-              emptyMessage="No bookings yet" 
+              emptyMessage={t("vendorBookings.noBookingsYet")} 
               onSelect={setSelectedBooking}
             />
           </TabsContent>
@@ -137,7 +139,7 @@ export default function VendorBookings() {
             onClick={() => navigate("/vendor/dashboard")}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Dashboard
+            {t("vendorDashboard.dashboard")}
           </Button>
         </div>
       </div>
@@ -147,54 +149,54 @@ export default function VendorBookings() {
         <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Booking Details</DialogTitle>
+              <DialogTitle>{t("vendorBookings.bookingDetails")}</DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 my-4">
               <div className="bg-neutral-50 p-4 rounded-lg">
                 <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-                  <div className="text-neutral-600 text-sm">Event Date</div>
+                  <div className="text-neutral-600 text-sm">{t("vendorBookings.eventDate")}</div>
                   <div className="font-medium">
                     {new Date(selectedBooking.eventDate).toLocaleDateString()}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                  <div className="text-neutral-600 text-sm">Event Type</div>
+                  <div className="text-neutral-600 text-sm">{t("vendorBookings.eventType")}</div>
                   <div className="font-medium">{selectedBooking.eventType}</div>
                 </div>
                 <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                  <div className="text-neutral-600 text-sm">Guest Count</div>
+                  <div className="text-neutral-600 text-sm">{t("vendorBookings.guestCount")}</div>
                   <div className="font-medium">{selectedBooking.guestCount}</div>
                 </div>
                 <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                  <div className="text-neutral-600 text-sm">Status</div>
+                  <div className="text-neutral-600 text-sm">{t("common.status")}</div>
                   <div className="font-medium capitalize">{selectedBooking.status}</div>
                 </div>
               </div>
               
               <div>
-                <h4 className="font-medium mb-2">Client Information</h4>
+                <h4 className="font-medium mb-2">{t("vendorBookings.clientInfo")}</h4>
                 <div className="bg-neutral-50 p-4 rounded-lg">
                   <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-                    <div className="text-neutral-600 text-sm">Name</div>
-                    <div className="font-medium">{selectedBooking.clientName || 'Client'}</div>
+                    <div className="text-neutral-600 text-sm">{t("common.name")}</div>
+                    <div className="font-medium">{selectedBooking.clientName || t("vendorBookings.clientName")}</div>
                   </div>
                 </div>
               </div>
               
               <div>
-                <h4 className="font-medium mb-2">Package Details</h4>
+                <h4 className="font-medium mb-2">{t("vendorBookings.packageDetails")}</h4>
                 <div className="bg-neutral-50 p-4 rounded-lg">
                   <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-                    <div className="text-neutral-600 text-sm">Service</div>
+                    <div className="text-neutral-600 text-sm">{t("bookings.service")}</div>
                     <div className="font-medium">{selectedBooking.serviceName}</div>
                   </div>
                   <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                    <div className="text-neutral-600 text-sm">Package</div>
+                    <div className="text-neutral-600 text-sm">{t("vendorBookings.packageType")}</div>
                     <div className="font-medium">{selectedBooking.packageType}</div>
                   </div>
                   <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                    <div className="text-neutral-600 text-sm">Total Price</div>
+                    <div className="text-neutral-600 text-sm">{t("vendorBookings.totalPrice")}</div>
                     <div className="font-medium text-secondary">${selectedBooking.totalPrice}</div>
                   </div>
                 </div>
@@ -202,7 +204,7 @@ export default function VendorBookings() {
               
               {selectedBooking.specialRequests && (
                 <div>
-                  <h4 className="font-medium mb-2">Special Requests</h4>
+                  <h4 className="font-medium mb-2">{t("vendorBookings.specialRequests")}</h4>
                   <div className="bg-neutral-50 p-4 rounded-lg">
                     <p className="text-neutral-700">{selectedBooking.specialRequests}</p>
                   </div>
@@ -217,7 +219,7 @@ export default function VendorBookings() {
                 onClick={() => navigate(`/vendor/chat/${selectedBooking.clientId}`)}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Message Client
+                {t("vendorBookings.messageClient")}
               </Button>
               
               {['pending', 'vendor_review'].includes(selectedBooking.status) && (
@@ -227,7 +229,7 @@ export default function VendorBookings() {
                   onClick={() => approvalMutation.mutate({ bookingId: selectedBooking.id, status: "approved" })}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  {approvalMutation.isPending ? "Updating..." : "Confirm Booking"}
+                  {approvalMutation.isPending ? t("common.update") : t("vendorBookings.confirmBooking")}
                 </Button>
               )}
               {['pending', 'vendor_review'].includes(selectedBooking.status) && (
@@ -237,7 +239,7 @@ export default function VendorBookings() {
                   disabled={approvalMutation.isPending}
                   onClick={() => approvalMutation.mutate({ bookingId: selectedBooking.id, status: "rejected" })}
                 >
-                  Reject
+                  {t("eventRequests.reject")}
                 </Button>
               )}
             </DialogFooter>
@@ -256,6 +258,8 @@ interface BookingsListProps {
 }
 
 function BookingsList({ bookings, isLoading, emptyMessage, onSelect }: BookingsListProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -279,7 +283,7 @@ function BookingsList({ bookings, isLoading, emptyMessage, onSelect }: BookingsL
         <Calendar className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
         <h3 className="font-medium text-lg text-neutral-800 mb-2">{emptyMessage}</h3>
         <p className="text-neutral-600 mb-4">
-          Bookings will appear here once clients make reservations.
+          {t("vendorBookings.bookingsWillAppear")}
         </p>
       </div>
     );
@@ -300,7 +304,7 @@ function BookingsList({ bookings, isLoading, emptyMessage, onSelect }: BookingsL
           <div className="min-w-0 flex-1">
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
               <h3 className="font-medium text-neutral-800">
-                {booking.clientName || 'Client'}
+                {booking.clientName || t("vendorBookings.clientName")}
               </h3>
               <BookingStatusBadge status={booking.status} />
             </div>
