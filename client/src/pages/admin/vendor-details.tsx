@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useRoute } from "wouter";
-import { ArrowLeft, ExternalLink, Loader2, Star, Upload } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Loader2, Star, Upload } from "lucide-react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,52 @@ function previousWorkToText(value: SupplierPreviousWork[] | null | undefined) {
   return (value || [])
     .map((item) => [item.title || "", item.url || "", item.imageUrl || "", item.description || ""].join(" | "))
     .join("\n");
+}
+
+function isImageFile(value?: string | null, contentType?: string | null) {
+  if (contentType?.toLowerCase().startsWith("image/")) return true;
+  return /\.(apng|avif|gif|jpe?g|png|webp|bmp|svg)(\?.*)?$/i.test(value || "");
+}
+
+function attachmentLabel(attachment: SupplierAttachment) {
+  return attachment.fileName || attachment.description || attachment.url.split("/").pop() || attachment.url;
+}
+
+function AttachmentPreview({
+  attachment,
+  onRemove,
+}: {
+  attachment: SupplierAttachment;
+  onRemove?: () => void;
+}) {
+  const { t } = useTranslation();
+  const isImage = isImageFile(attachment.url, attachment.contentType);
+  const label = attachmentLabel(attachment);
+
+  return (
+    <div className="overflow-hidden rounded-md border bg-background">
+      <a href={attachment.url} target="_blank" rel="noreferrer" className="block">
+        {isImage ? (
+          <img src={attachment.url} alt={label} className="h-32 w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-32 flex-col items-center justify-center gap-2 bg-muted/50 px-3 text-center text-muted-foreground">
+            <FileText className="h-8 w-8" />
+            <span className="line-clamp-2 text-xs">{label}</span>
+          </div>
+        )}
+      </a>
+      <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+        <a href={attachment.url} target="_blank" rel="noreferrer" className="min-w-0 truncate text-xs font-medium text-primary">
+          {label}
+        </a>
+        {onRemove ? (
+          <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0 px-2" onClick={onRemove}>
+            {t("common.remove")}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 async function uploadSupplierAttachment(file: File, folder: string): Promise<SupplierAttachment> {
@@ -319,6 +365,20 @@ export default function AdminVendorDetails() {
                       placeholder={t("adminVendors.photosPlaceholder")}
                       onChange={(event) => updateField("photos", lines(event.target.value))}
                     />
+                    {form.photos?.length ? (
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {form.photos.map((photo, index) => (
+                          <a key={`${photo}-${index}`} href={photo} target="_blank" rel="noreferrer" className="overflow-hidden rounded-md border bg-muted/30">
+                            <img
+                              src={photo}
+                              alt={`${t("adminVendors.supplierPhotos")} ${index + 1}`}
+                              className="h-32 w-full object-cover"
+                              loading="lazy"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="previousWork">{t("adminVendors.previousWork")}</Label>
@@ -353,21 +413,13 @@ export default function AdminVendorDetails() {
                     {form.attachments?.length ? (
                       <div className="rounded-md border p-3">
                         <p className="text-sm font-medium">{t("adminVendors.uploadedFiles")}</p>
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           {form.attachments.map((attachment, index) => (
-                            <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                              <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
-                                {attachment.fileName || attachment.description || attachment.url}
-                              </a>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateField("attachments", (form.attachments || []).filter((_, itemIndex) => itemIndex !== index))}
-                              >
-                                {t("common.remove")}
-                              </Button>
-                            </div>
+                            <AttachmentPreview
+                              key={`${attachment.url}-${index}`}
+                              attachment={attachment}
+                              onRemove={() => updateField("attachments", (form.attachments || []).filter((_, itemIndex) => itemIndex !== index))}
+                            />
                           ))}
                         </div>
                       </div>
@@ -402,11 +454,9 @@ export default function AdminVendorDetails() {
                   <div>
                     <h4 className="text-sm font-medium">{t("adminVendors.attachments")}</h4>
                     {form.attachments?.length ? (
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
                         {form.attachments.slice(0, 4).map((attachment, index) => (
-                          <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-primary">
-                            {attachment.fileName || attachment.description || attachment.url}
-                          </a>
+                          <AttachmentPreview key={`${attachment.url}-${index}`} attachment={attachment} />
                         ))}
                       </div>
                     ) : (
@@ -420,6 +470,11 @@ export default function AdminVendorDetails() {
                       <div className="space-y-2">
                         {form.previousWork.map((work, index) => (
                           <div key={`${work.title}-${index}`} className="rounded-md bg-muted/40 p-3">
+                            {work.imageUrl ? (
+                              <a href={work.imageUrl} target="_blank" rel="noreferrer" className="mb-3 block overflow-hidden rounded-md border bg-background">
+                                <img src={work.imageUrl} alt={work.title} className="h-36 w-full object-cover" loading="lazy" />
+                              </a>
+                            ) : null}
                             <h5 className="text-sm font-medium">{work.title}</h5>
                             {work.description ? <p className="mt-1 text-xs text-muted-foreground">{work.description}</p> : null}
                             {work.url ? (

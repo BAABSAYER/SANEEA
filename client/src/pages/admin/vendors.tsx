@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
-import { Filter, Loader2, Plus, Search, Star, Trash2, Upload } from "lucide-react";
+import { FileText, Filter, Loader2, Plus, Search, Star, Trash2, Upload } from "lucide-react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,15 @@ type SupplierAttachment = {
   description?: string | null;
   contentType?: string | null;
 };
+
+function isImageFile(value?: string | null, contentType?: string | null) {
+  if (contentType?.toLowerCase().startsWith("image/")) return true;
+  return /\.(apng|avif|gif|jpe?g|png|webp|bmp|svg)(\?.*)?$/i.test(value || "");
+}
+
+function attachmentLabel(attachment: SupplierAttachment) {
+  return attachment.fileName || attachment.description || attachment.url.split("/").pop() || attachment.url;
+}
 
 type SupplierDetails = Vendor & {
   email?: string | null;
@@ -383,20 +392,38 @@ export default function AdminVendors() {
                         {newVendorAttachments.length > 0 ? (
                           <div className="rounded-md border p-3">
                             <p className="text-sm font-medium">{t("adminVendors.uploadedFiles")}</p>
-                            <div className="mt-2 space-y-1">
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
                               {newVendorAttachments.map((attachment, index) => (
-                                <div key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                                  <a href={attachment.url} target="_blank" rel="noreferrer" className="truncate text-primary">
-                                    {attachment.fileName || attachment.description || attachment.url}
+                                <div key={`${attachment.url}-${index}`} className="overflow-hidden rounded-md border bg-background">
+                                  <a href={attachment.url} target="_blank" rel="noreferrer" className="block">
+                                    {isImageFile(attachment.url, attachment.contentType) ? (
+                                      <img
+                                        src={attachment.url}
+                                        alt={attachmentLabel(attachment)}
+                                        className="h-32 w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div className="flex h-32 flex-col items-center justify-center gap-2 bg-muted/50 px-3 text-center text-muted-foreground">
+                                        <FileText className="h-8 w-8" />
+                                        <span className="line-clamp-2 text-xs">{attachmentLabel(attachment)}</span>
+                                      </div>
+                                    )}
                                   </a>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setNewVendorAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                                  >
-                                    {t("common.remove")}
-                                  </Button>
+                                  <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+                                    <a href={attachment.url} target="_blank" rel="noreferrer" className="min-w-0 truncate text-xs font-medium text-primary">
+                                      {attachmentLabel(attachment)}
+                                    </a>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 shrink-0 px-2"
+                                      onClick={() => setNewVendorAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                                    >
+                                      {t("common.remove")}
+                                    </Button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
