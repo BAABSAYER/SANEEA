@@ -1,8 +1,9 @@
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Button, Field, styles as uiStyles } from "./ui";
 import { colors, radius } from "../theme/colors";
+import { getEventSettings } from "../api/mobile";
 
 type PickerOption = {
   label: string;
@@ -233,8 +234,8 @@ export function CityField({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const { t } = useTranslation();
-  const cityOptions = [
+  const { i18n, t } = useTranslation();
+  const fallbackCityOptions = [
     ["Riyadh", "cityRiyadh"],
     ["Jeddah", "cityJeddah"],
     ["Makkah", "cityMakkah"],
@@ -252,6 +253,34 @@ export function CityField({
     ["Al Ahsa", "cityAlAhsa"],
     ["Yanbu", "cityYanbu"],
   ].map(([value, key]) => ({ label: t(key), value }));
+  const [cityOptions, setCityOptions] = useState<PickerOption[]>(fallbackCityOptions);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getEventSettings()
+      .then((settings) => {
+        if (!mounted) return;
+        const language = i18n.language === "ar" ? "ar" : "en";
+        const options = (settings.availableCities || [])
+          .filter((city) => city.active)
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((city) => ({
+            value: city.value,
+            label: language === "ar" ? city.labelAr : city.labelEn,
+          }))
+          .filter((city) => city.value && city.label);
+
+        if (options.length > 0) setCityOptions(options);
+      })
+      .catch(() => {
+        if (mounted) setCityOptions(fallbackCityOptions);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [i18n.language]);
 
   return <SelectField label={label} value={value} placeholder={t("selectCity")} options={cityOptions} onChange={onChange} />;
 }

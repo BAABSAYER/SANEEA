@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>Saneea Marketing Brand Guide</title>
+  <style>
+    @font-face {
+      font-family: "Almarai";
+      src: url("saneea_mobile_react/assets/fonts/Almarai-Regular.ttf") format("truetype");
+      font-weight: 400;
+    }
+
+    @font-face {
+      font-family: "Almarai";
+      src: url("saneea_mobile_react/assets/fonts/Almarai-Bold.ttf") format("truetype");
+      font-weight: 700;
+    }
+
+    :root {
+      --ink: #000000;
+      --ink-soft: #111111;
+      --tagline-green: #254C39;
+      --brand-green: #1A5C32;
+      --green-dark: #134525;
+      --green-soft: #E8F4EC;
+      --surface: #FFFFFF;
+      --surface-soft: #FAFAFA;
+      --line: #EBEBEB;
+      --muted: #7A7A7A;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #f1f1f1;
+      color: var(--ink-soft);
+      font-family: "Almarai", Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 22mm;
+      background: var(--surface);
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page:last-child { page-break-after: auto; }
+
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: var(--ink-soft);
+      color: white;
+    }
+
+    .cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(26, 92, 50, 0.22), transparent 46%),
+        radial-gradient(circle at 18% 22%, rgba(37, 76, 57, 0.35), transparent 30%);
+    }
+
+    .cover > * { position: relative; z-index: 1; }
+
+    .cover-logo {
+      width: 118mm;
+      background: white;
+      border-radius: 12mm;
+      padding: 18mm 22mm;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.32);
+    }
+
+    .cover-logo img {
+      width: 100%;
+      display: block;
+    }
+
+    .cover h1 {
+      margin: 22mm 0 4mm;
+      font-size: 34px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .cover .subtitle {
+      margin: 0;
+      color: rgba(255,255,255,0.72);
+      font-size: 14px;
+      direction: ltr;
+    }
+
+    .stamp {
+      position: absolute;
+      bottom: 12mm;
+      left: 22mm;
+      right: 22mm;
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255,255,255,0.45);
+      font-size: 11px;
+      direction: ltr;
+    }
+
+    .eyebrow {
+      margin: 0 0 5mm;
+      color: var(--brand-green);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 4mm;
+      font-size: 30px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 3mm;
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.8;
+      color: #363636;
+      font-size: 13px;
+    }
+
+    .english {
+      direction: ltr;
+      text-align: left;
+      font-family: Arial, sans-serif;
+    }
+
+    .rule {
+      width: 18mm;
+      height: 1.5mm;
+      border-radius: 999px;
+      background: var(--brand-green);
+      margin: 0 0 10mm auto;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+      margin-top: 10mm;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 5mm;
+      padding: 7mm;
+      background: var(--surface-soft);
+    }
+
+    .logo-display {
+      min-height: 72mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 6mm;
+      padding: 12mm;
+    }
+
+    .logo-display img {
+      max-width: 100%;
+      max-height: 48mm;
+      object-fit: contain;
+    }
+
+    .icon-display {
+      display: grid;
+      grid-template-columns: 38mm 1fr;
+      gap: 8mm;
+      align-items: center;
+      margin-top: 8mm;
+    }
+
+    .icon-display img {
+      width: 38mm;
+      height: 38mm;
+      border-radius: 9mm;
+      border: 1px solid var(--line);
+    }
+
+    .do-list {
+      margin: 4mm 0 0;
+      padding: 0 5mm 0 0;
+      color: #363636;
+      font-size: 12px;
+      line-height: 1.9;
+    }
+
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5mm;
+      margin-top: 10mm;
+    }
+
+    .swatch {
+      min-height: 36mm;
+      border-radius: 5mm;
+      padding: 5mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .swatch.dark { color: white; }
+    .swatch.light { color: #111; }
+
+    .swatch strong {
+      font-size: 13px;
+      margin-bottom: 1mm;
+    }
+
+    .swatch code {
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      opacity: 0.8;
+      direction: ltr;
+      text-align: left;
+    }
+
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 9mm;
+      direction: ltr;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+    }
+
+    .token-table th,
+    .token-table td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 3mm;
+    }
+
+    .token-table th {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .mini-chip {
+      display: inline-block;
+      width: 9mm;
+      height: 9mm;
+      border-radius: 2mm;
+      border: 1px solid rgba(0,0,0,0.12);
+      vertical-align: middle;
+      margin-right: 3mm;
+    }
+
+    .voice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+      margin-top: 9mm;
+    }
+
+    .example {
+      border-right: 1.5mm solid var(--brand-green);
+      padding: 4mm 5mm;
+      background: var(--green-soft);
+      border-radius: 4mm 0 0 4mm;
+      margin-top: 5mm;
+      font-size: 13px;
+      color: var(--green-dark);
+      line-height: 1.8;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body { background: white; }
+      .page { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="page cover">
+    <div class="cover-logo">
+      <img src="client/src/assets/logo.png" alt="Saneea logo" />
+    </div>
+    <h1>دليل الهوية التسويقية<br />سنيع</h1>
+    <p class="subtitle">Marketing Brand Guide for Campaign Partners</p>
+    <div class="stamp">
+      <span>Prepared for marketing activation</span>
+      <span>2026</span>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">01 — الهوية</p>
+    <h2>سنيع: نضبطها لك</h2>
+    <div class="rule"></div>
+
+    <div class="section-grid">
+      <div>
+        <h3>وصف مختصر</h3>
+        <p>
+          سنيع منصة سعودية تساعد العملاء على تنظيم المناسبات وربطهم بالموردين المناسبين،
+          من اختيار نوع المناسبة والباقات إلى متابعة الطلب والتواصل مع فريق الخدمة.
+        </p>
+        <div class="example">الوعد التسويقي: مناسبتك مرتبة، واضحة، ومتابعة من مكان واحد.</div>
+      </div>
+      <div class="english">
+        <h3>Short Description</h3>
+        <p>
+          Saneea is a Saudi event planning and supplier coordination platform that helps customers
+          choose event types, packages, suppliers, and manage their booking from one place.
+        </p>
+        <div class="example english">Campaign promise: Event planning made clear, local, and coordinated.</div>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="card">
+        <h3>الشخصية</h3>
+        <ul class="do-list">
+          <li>موثوقة وقريبة من المستخدم السعودي.</li>
+          <li>عملية وسهلة، بدون تعقيد أو مبالغة.</li>
+          <li>تركز على الراحة، التنظيم، وسرعة الوصول للمورد المناسب.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>النبرة</h3>
+        <ul class="do-list">
+          <li>استخدم عبارات قصيرة وواضحة.</li>
+          <li>اجعل الدعوة للفعل مباشرة: احجز، اختر، أرسل، تابع.</li>
+          <li>تجنب الوعود غير الواقعية أو المبالغة التسويقية.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">02 — الشعار</p>
+    <h2>الشعار المستخدم في التطبيق والحملات</h2>
+    <div class="rule"></div>
+
+    <div class="logo-display">
+      <img src="client/src/assets/logo.png" alt="Saneea wordmark" />
+    </div>
+
+    <div class="icon-display">
+      <img src="saneea_mobile_react/assets/brand/app_icon.png" alt="Saneea app icon" />
+      <div>
+        <h3>أيقونة التطبيق</h3>
+        <p>
+          تستخدم الأيقونة في متجر التطبيقات، روابط التحميل، حملات الجوال، وأي مساحة مربعة.
+          الشعار الكامل يستخدم في صفحات الهبوط والمنشورات والتصاميم التي تسمح بمساحة أوسع.
+        </p>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="card">
+        <h3>الاستخدام الصحيح</h3>
+        <ul class="do-list">
+          <li>استخدم الشعار على خلفية بيضاء أو فاتحة.</li>
+          <li>اترك مساحة واضحة حول الشعار.</li>
+          <li>استخدم نسخة الأيقونة للمساحات الصغيرة فقط.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>تجنب</h3>
+        <ul class="do-list">
+          <li>لا تغير لون الخط العربي.</li>
+          <li>لا تمدد أو تقص الشعار.</li>
+          <li>لا تضع الشعار فوق صورة مزدحمة أو خلفية ضعيفة التباين.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">03 — الألوان</p>
+    <h2>ألوان الهوية والحملات</h2>
+    <div class="rule"></div>
+
+    <div class="swatch-grid">
+      <div class="swatch dark" style="background:#000000"><strong>Ink</strong><code>#000000</code></div>
+      <div class="swatch dark" style="background:#111111"><strong>Ink Soft</strong><code>#111111</code></div>
+      <div class="swatch dark" style="background:#254C39"><strong>Tagline Green</strong><code>#254C39</code></div>
+      <div class="swatch dark" style="background:#1A5C32"><strong>Brand Green</strong><code>#1A5C32</code></div>
+      <div class="swatch light" style="background:#E8F4EC"><strong>Green Soft</strong><code>#E8F4EC</code></div>
+      <div class="swatch light" style="background:#FAFAFA"><strong>Surface Soft</strong><code>#FAFAFA</code></div>
+    </div>
+
+    <table class="token-table">
+      <thead>
+        <tr>
+          <th>Color</th>
+          <th>Hex</th>
+          <th>Campaign Use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="mini-chip" style="background:#111111"></span>Ink Soft</td><td>#111111</td><td>Primary headlines, main CTAs, strong contrast</td></tr>
+        <tr><td><span class="mini-chip" style="background:#1A5C32"></span>Brand Green</td><td>#1A5C32</td><td>Secondary CTA, active states, trust/accent moments</td></tr>
+        <tr><td><span class="mini-chip" style="background:#254C39"></span>Tagline Green</td><td>#254C39</td><td>Logo-derived refined accent, premium campaign details</td></tr>
+        <tr><td><span class="mini-chip" style="background:#E8F4EC"></span>Green Soft</td><td>#E8F4EC</td><td>Light backgrounds, selected states, campaign blocks</td></tr>
+        <tr><td><span class="mini-chip" style="background:#EBEBEB"></span>Line</td><td>#EBEBEB</td><td>Borders, dividers, subtle UI structure</td></tr>
+      </tbody>
+    </table>
+
+    <div class="example">
+      توجيه مهم: استخدم الأسود والأبيض كقاعدة أساسية، والأخضر كعنصر تمييز. لا تجعل الحملة كلها خضراء حتى لا تفقد الهوية وضوحها.
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">04 — الخطاب والأصول</p>
+    <h2>إرشادات للحملات التسويقية</h2>
+    <div class="rule"></div>
+
+    <div class="voice-grid">
+      <div class="card">
+        <h3>رسائل مقترحة</h3>
+        <ul class="do-list">
+          <li>نضبط مناسبتك من البداية للنهاية.</li>
+          <li>اختر المناسبة، وسنيع يرتب لك التفاصيل.</li>
+          <li>موردون، باقات، ومتابعة في مكان واحد.</li>
+          <li>خدمة محلية تفهم مناسباتك.</li>
+        </ul>
+      </div>
+      <div class="card english">
+        <h3>Suggested English Lines</h3>
+        <ul class="do-list">
+          <li>Plan your event with clarity.</li>
+          <li>Choose the occasion. Saneea coordinates the details.</li>
+          <li>Suppliers, packages, and follow-up in one place.</li>
+          <li>Built for Saudi event needs.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="card">
+        <h3>الخطوط</h3>
+        <ul class="do-list">
+          <li>العربية: Almarai</li>
+          <li>الإنجليزية: Roboto أو Arial</li>
+          <li>استخدم وزن 700 للعناوين و400 للنصوص.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>اتجاه التصاميم</h3>
+        <ul class="do-list">
+          <li>صور حقيقية للمناسبات، الباقات، والضيافة.</li>
+          <li>تصاميم نظيفة وواضحة، ليست مزدحمة.</li>
+          <li>زر دعوة واحد واضح في كل تصميم.</li>
+        </ul>
+      </div>
+    </div>
+
+  </section>
+</body>
+</html>

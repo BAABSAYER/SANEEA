@@ -22,6 +22,7 @@ import AdminSchedule from "./pages/admin/schedule";
 import AdminVendors from "./pages/admin/vendors";
 import AdminVendorDetails from "./pages/admin/vendor-details";
 import AdminAnalyticsPage from "./pages/admin-analytics";
+import AdminSettings from "./pages/admin/settings";
 
 import Messages from "./pages/messages";
 import Chat from "./pages/chat";
@@ -79,6 +80,7 @@ function Router() {
       <AdminRoute path="/admin/messages" component={AdminMessages} />
       <AdminRoute path="/admin/chat" component={AdminChat} />
       <AdminRoute path="/admin/chat/:userId" component={AdminChat} />
+      <AdminRoute path="/admin/settings" component={AdminSettings} />
       <AdminRoute path="/admin/profile" component={Profile} />
       
       {/* 404 Route */}

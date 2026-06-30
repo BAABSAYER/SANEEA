@@ -130,6 +130,18 @@ export type QuestionnaireItem = {
   displayOrder?: number | null;
 };
 
+export type CityOption = {
+  value: string;
+  labelAr: string;
+  labelEn: string;
+  active: boolean;
+  displayOrder: number;
+};
+
+export type EventSettings = {
+  availableCities: CityOption[];
+};
+
 export function requestSignupOtp(input: { phone: string; fullName: string; password: string }) {
   return apiRequest<{ phone: string; expiresInSeconds: number; devCode?: string }>("/api/mobile/auth/signup/request-otp", {
     method: "POST",
@@ -190,6 +202,10 @@ export function getPackageCustomization(packageId: number) {
 
 export function getQuestionnaireItems(eventTypeId: number) {
   return apiRequest<QuestionnaireItem[]>(`/api/event-types/${eventTypeId}/questionnaire-items`, { auth: false });
+}
+
+export function getEventSettings() {
+  return apiRequest<EventSettings>("/api/mobile/event-settings", { auth: false });
 }
 
 export function createBooking(input: {

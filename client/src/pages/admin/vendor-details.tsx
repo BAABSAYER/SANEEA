@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useRoute } from "wouter";
-import { ArrowLeft, ExternalLink, FileText, Loader2, Star, Upload } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, Star, Upload } from "lucide-react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,16 @@ function isImageFile(value?: string | null, contentType?: string | null) {
   return /\.(apng|avif|gif|jpe?g|png|webp|bmp|svg)(\?.*)?$/i.test(value || "");
 }
 
+function isVideoFile(value?: string | null, contentType?: string | null) {
+  if (contentType?.toLowerCase().startsWith("video/")) return true;
+  return /\.(mp4|mov|m4v|webm|ogg)(\?.*)?$/i.test(value || "");
+}
+
+function isPdfFile(value?: string | null, contentType?: string | null) {
+  if (contentType?.toLowerCase().includes("pdf")) return true;
+  return /\.pdf(\?.*)?$/i.test(value || "");
+}
+
 function attachmentLabel(attachment: SupplierAttachment) {
   return attachment.fileName || attachment.description || attachment.url.split("/").pop() || attachment.url;
 }
@@ -88,29 +98,54 @@ function AttachmentPreview({
 }) {
   const { t } = useTranslation();
   const isImage = isImageFile(attachment.url, attachment.contentType);
+  const isVideo = isVideoFile(attachment.url, attachment.contentType);
+  const isPdf = isPdfFile(attachment.url, attachment.contentType);
   const label = attachmentLabel(attachment);
 
   return (
-    <div className="overflow-hidden rounded-md border bg-background">
-      <a href={attachment.url} target="_blank" rel="noreferrer" className="block">
+    <div className="overflow-hidden rounded-md border bg-background shadow-sm">
+      <div className="bg-muted/20">
         {isImage ? (
-          <img src={attachment.url} alt={label} className="h-32 w-full object-cover" loading="lazy" />
+          <img src={attachment.url} alt={label} className="h-52 w-full object-cover" loading="lazy" />
+        ) : isVideo ? (
+          <video
+            src={attachment.url}
+            className="h-52 w-full bg-black object-contain"
+            controls
+            preload="metadata"
+          >
+            {label}
+          </video>
+        ) : isPdf ? (
+          <iframe
+            src={attachment.url}
+            title={label}
+            className="h-72 w-full bg-white"
+            loading="lazy"
+          />
         ) : (
-          <div className="flex h-32 flex-col items-center justify-center gap-2 bg-muted/50 px-3 text-center text-muted-foreground">
+          <div className="flex h-52 flex-col items-center justify-center gap-2 bg-muted/50 px-3 text-center text-muted-foreground">
             <FileText className="h-8 w-8" />
             <span className="line-clamp-2 text-xs">{label}</span>
           </div>
         )}
-      </a>
+      </div>
       <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
-        <a href={attachment.url} target="_blank" rel="noreferrer" className="min-w-0 truncate text-xs font-medium text-primary">
+        <span className="min-w-0 truncate text-xs font-medium text-foreground" title={label}>
           {label}
-        </a>
-        {onRemove ? (
-          <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0 px-2" onClick={onRemove}>
-            {t("common.remove")}
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <a href={attachment.url} target="_blank" rel="noreferrer" aria-label={label}>
+              <Download className="h-3.5 w-3.5" />
+            </a>
           </Button>
-        ) : null}
+          {onRemove ? (
+            <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={onRemove}>
+              {t("common.remove")}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -413,7 +448,7 @@ export default function AdminVendorDetails() {
                     {form.attachments?.length ? (
                       <div className="rounded-md border p-3">
                         <p className="text-sm font-medium">{t("adminVendors.uploadedFiles")}</p>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           {form.attachments.map((attachment, index) => (
                             <AttachmentPreview
                               key={`${attachment.url}-${index}`}
@@ -454,8 +489,8 @@ export default function AdminVendorDetails() {
                   <div>
                     <h4 className="text-sm font-medium">{t("adminVendors.attachments")}</h4>
                     {form.attachments?.length ? (
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                        {form.attachments.slice(0, 4).map((attachment, index) => (
+                      <div className="mt-2 grid gap-3">
+                        {form.attachments.map((attachment, index) => (
                           <AttachmentPreview key={`${attachment.url}-${index}`} attachment={attachment} />
                         ))}
                       </div>

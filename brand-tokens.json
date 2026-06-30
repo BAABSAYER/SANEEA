@@ -1,0 +1,57 @@
+{
+  "name": {
+    "arabic": "سنيع",
+    "english": "Saneea"
+  },
+  "tagline": {
+    "arabic": "نضبطها لك",
+    "english": "We'll set it up for you"
+  },
+  "category": "Saudi event planning and supplier coordination platform",
+  "logo": {
+    "webWordmark": "client/src/assets/logo.png",
+    "mobileWordmark": "saneea_mobile_react/assets/brand/logo.png",
+    "appIcon": "saneea_mobile_react/assets/brand/app_icon.png",
+    "appIconForeground": "saneea_mobile_react/assets/brand/app_icon_foreground.png",
+    "webAppIcon": "client/public/images/app_icon.png",
+    "favicon": "client/public/favicon.svg"
+  },
+  "colors": {
+    "ink": "#000000",
+    "inkSoft": "#111111",
+    "taglineGreen": "#254C39",
+    "brandGreen": "#1A5C32",
+    "greenDark": "#134525",
+    "greenSoft": "#E8F4EC",
+    "surface": "#FFFFFF",
+    "surfaceSoft": "#FAFAFA",
+    "line": "#EBEBEB",
+    "muted": "#7A7A7A",
+    "success": "#22C55E",
+    "warning": "#F59E0B",
+    "danger": "#EF4444"
+  },
+  "typography": {
+    "arabic": "Almarai",
+    "latin": "Roboto",
+    "stack": "Almarai, Roboto, sans-serif",
+    "weights": {
+      "regular": 400,
+      "bold": 700
+    }
+  },
+  "usage": {
+    "primaryCta": {
+      "background": "#111111",
+      "text": "#FFFFFF"
+    },
+    "secondaryCta": {
+      "background": "#1A5C32",
+      "text": "#FFFFFF"
+    },
+    "selectedState": {
+      "background": "#E8F4EC",
+      "text": "#1A5C32"
+    }
+  }
+}

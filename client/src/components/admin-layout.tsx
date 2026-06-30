@@ -12,7 +12,8 @@ import {
   Menu,
   UserCog,
   X,
-  Package
+  Package,
+  Settings
 } from "lucide-react";
 import appIcon from '@/assets/logo.png';
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     { name: t('navigation.vendors', { defaultValue: 'Vendors' }), path: "/admin/vendors", icon: <UserCog className="h-5 w-5" /> },
     { name: t('navigation.users'), path: "/admin/unified-users", icon: <Users className="h-5 w-5" /> },
     { name: t('navigation.messages'), path: "/admin/messages", icon: <MessageSquare className="h-5 w-5" /> },
+    { name: t('navigation.settings'), path: "/admin/settings", icon: <Settings className="h-5 w-5" /> },
     { name: t('navigation.profile'), path: "/admin/profile", icon: <UserCircle className="h-5 w-5" /> },
   ];
 

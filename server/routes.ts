@@ -10,6 +10,7 @@ import { paymentGateway } from "./gateways/payment";
 import { whatsappGateway } from "./gateways/whatsapp";
 import { pushNotificationGateway } from "./gateways/push";
 import { erpGateway } from "./gateways/erp";
+import { activeCityValues, getEventSettings, saveEventSettings } from "./platform-settings";
 import { 
   InsertVendor, InsertBooking, InsertMessage, InsertEventType, InsertQuestionnaireItem,
   InsertEventBundle, InsertBundleOption, InsertBookingConfirmation,
@@ -285,6 +286,18 @@ const pushSendSchema = z.object({
   data: z.record(z.unknown()).optional(),
 });
 
+const cityOptionSchema = z.object({
+  value: z.string().trim().min(1).max(120),
+  labelAr: z.string().trim().min(1).max(120),
+  labelEn: z.string().trim().min(1).max(120),
+  active: z.boolean().default(true),
+  displayOrder: z.coerce.number().int().min(0).default(0),
+});
+
+const eventSettingsSchema = z.object({
+  availableCities: z.array(cityOptionSchema).min(1).max(100),
+});
+
 const bookingMessageTemplateSchema = z.object({
   template: z.enum([
     "booking_received",
@@ -463,6 +476,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up JWT authentication before protected routes
   setupAuth(app);
+
+  app.get('/api/mobile/event-settings', async (_req, res) => {
+    try {
+      const settings = await getEventSettings();
+      res.json({
+        ...settings,
+        availableCities: settings.availableCities.filter((city) => city.active),
+      });
+    } catch (error) {
+      console.error('Error fetching mobile event settings:', error);
+      res.status(500).json({ message: 'Failed to fetch event settings' });
+    }
+  });
+
+  app.get('/api/admin/event-settings', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+      if (req.user.userType !== USER_TYPES.ADMIN) return res.status(403).json({ message: 'Admin access required' });
+
+      res.json(await getEventSettings());
+    } catch (error) {
+      console.error('Error fetching admin event settings:', error);
+      res.status(500).json({ message: 'Failed to fetch event settings' });
+    }
+  });
+
+  app.patch('/api/admin/event-settings', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+      if (req.user.userType !== USER_TYPES.ADMIN) return res.status(403).json({ message: 'Admin access required' });
+
+      const input = eventSettingsSchema.parse(req.body);
+      res.json(await saveEventSettings(input));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid event settings', errors: error.errors });
+      }
+      console.error('Error updating event settings:', error);
+      res.status(500).json({ message: 'Failed to update event settings' });
+    }
+  });
 
   async function sendAdminClientMessage(input: {
     adminId?: number;
@@ -2285,6 +2339,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = normalizeStartOfDay(new Date());
       if (normalizeStartOfDay(bookingData.eventDate) < today) {
         return res.status(400).json({ message: 'Event date cannot be in the past' });
+      }
+
+      const eventSettings = await getEventSettings();
+      if (!activeCityValues(eventSettings).has(bookingData.location.toLowerCase())) {
+        return res.status(400).json({ message: 'Selected city is not available' });
       }
 
       const booking = await db.transaction(async (tx) => {
