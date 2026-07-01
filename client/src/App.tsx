@@ -11,12 +11,14 @@ import PrivacyPolicy from "@/pages/privacy-policy";
 // Admin Dashboard Pages
 import AdminDashboard from "./pages/admin/dashboard";
 import AdminBookings from "./pages/admin/bookings";
+import AdminProposalBuilder from "./pages/admin/proposal-builder";
 import AdminMessages from "./pages/admin/admin-messages";
 import AdminChat from "./pages/admin/admin-chat";
 import AdminUsers from "./pages/admin/users";
 import AdminUsersList from "./pages/admin/users-list";
 import UnifiedUsersPage from "./pages/admin/unified-users";
 import AdminEvents from "./pages/admin/events";
+import AdminTemplates from "./pages/admin/templates";
 import AdminBundles from "./pages/admin/bundles";
 import AdminSchedule from "./pages/admin/schedule";
 import AdminVendors from "./pages/admin/vendors";
@@ -68,9 +70,11 @@ function Router() {
       
       {/* Admin Dashboard Routes */}
       <AdminRoute path="/admin" component={AdminDashboard} />
+      <AdminRoute path="/admin/bookings/:id/proposal" component={AdminProposalBuilder} />
       <AdminRoute path="/admin/bookings" component={AdminBookings} />
       <AdminRoute path="/admin/schedule" component={AdminSchedule} />
       <AdminRoute path="/admin/events" component={AdminEvents} />
+      <AdminRoute path="/admin/templates" component={AdminTemplates} />
       <AdminRoute path="/admin/bundles" component={AdminBundles} />
       <AdminRoute path="/admin/vendors/:id" component={AdminVendorDetails} />
       <AdminRoute path="/admin/vendors" component={AdminVendors} />

@@ -56,6 +56,14 @@ export const PAYMENT_STATUS = {
   REFUNDED: 'refunded',
 } as const;
 
+export const PROPOSAL_STATUS = {
+  DRAFT: 'draft',
+  SENT: 'sent',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  EXPIRED: 'expired',
+} as const;
+
 export const BUNDLE_TIERS = {
   CHEAP: 'cheap',
   MID: 'mid',
@@ -147,6 +155,7 @@ export const bookings = pgTable("bookings", {
   clientId: integer("client_id").notNull().references(() => users.id),
   eventTypeId: integer("event_type_id").references(() => eventTypes.id),
   bundleId: integer("bundle_id").references(() => eventBundles.id),
+  templateId: integer("template_id").references(() => eventTemplates.id),
   vendorId: integer("vendor_id").references(() => vendors.id),
   serviceId: integer("service_id").references(() => services.id),
   status: text("status").notNull().default(BOOKING_STATUS.PENDING),
@@ -212,6 +221,12 @@ export const adminPermissions = pgTable("admin_permissions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Event Types table (managed by admin AND vendors)
 export const eventTypes = pgTable("event_types", {
   id: serial("id").primaryKey(),
@@ -220,6 +235,7 @@ export const eventTypes = pgTable("event_types", {
   icon: text("icon"),
   images: jsonb("images").$type<string[]>().default([]),
   videos: jsonb("videos").$type<string[]>().default([]),
+  availableCities: jsonb("available_cities").$type<string[]>().default([]),
   category: text("category"), // wedding, corporate, birthday, etc.
   isActive: boolean("is_active").default(true),
   requiresApproval: boolean("requires_approval").default(false), // For vendor-created events
@@ -228,6 +244,26 @@ export const eventTypes = pgTable("event_types", {
   createdBy: integer("created_by").references(() => users.id),
   createdByType: text("created_by_type").notNull(), // admin, vendor
   vendorId: integer("vendor_id").references(() => vendors.id), // For vendor-created events
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Event templates are the mobile-facing visual offer cards.
+// They can be backed by legacy event bundles during migration.
+export const eventTemplates = pgTable("event_templates", {
+  id: serial("id").primaryKey(),
+  eventTypeId: integer("event_type_id").notNull().references(() => eventTypes.id),
+  sourceBundleId: integer("source_bundle_id").references(() => eventBundles.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  estimatedMinPrice: doublePrecision("estimated_min_price"),
+  estimatedMaxPrice: doublePrecision("estimated_max_price"),
+  images: jsonb("images").$type<string[]>().default([]),
+  videos: jsonb("videos").$type<string[]>().default([]),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -242,6 +278,22 @@ export const eventItems = pgTable("event_items", {
   isRequired: boolean("is_required").default(true),
   displayOrder: integer("display_order").default(0),
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const eventTemplateItems = pgTable("event_template_items", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull().references(() => eventTemplates.id),
+  eventItemId: integer("event_item_id").references(() => eventItems.id),
+  defaultOptionId: integer("default_option_id").references(() => itemVendorOptions.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  images: jsonb("images").$type<string[]>().default([]),
+  videos: jsonb("videos").$type<string[]>().default([]),
+  quantity: doublePrecision("quantity").notNull().default(1),
+  isRequired: boolean("is_required").default(true),
+  displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -271,6 +323,17 @@ export const questionnaireItems = pgTable("questionnaire_items", {
   required: boolean("required").default(false),
   displayOrder: integer("display_order"),
   createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const questionnaireOptions = pgTable("questionnaire_options", {
+  id: serial("id").primaryKey(),
+  questionnaireItemId: integer("questionnaire_item_id").notNull().references(() => questionnaireItems.id),
+  labelAr: text("label_ar").notNull(),
+  labelEn: text("label_en"),
+  value: text("value").notNull(),
+  imageUrl: text("image_url"),
+  displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -367,6 +430,47 @@ export const payments = pgTable("payments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Booking proposals prepared by admins after reviewing the client request
+export const bookingProposals = pgTable("booking_proposals", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").notNull().references(() => bookings.id),
+  status: text("status").notNull().default(PROPOSAL_STATUS.DRAFT),
+  totalPrice: doublePrecision("total_price").notNull(),
+  depositAmount: doublePrecision("deposit_amount"),
+  finalAmount: doublePrecision("final_amount"),
+  notes: text("notes"),
+  validUntil: timestamp("valid_until"),
+  sentAt: timestamp("sent_at"),
+  acceptedAt: timestamp("accepted_at"),
+  rejectedAt: timestamp("rejected_at"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const bookingProposalItems = pgTable("booking_proposal_items", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposal_id").notNull().references(() => bookingProposals.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  quantity: doublePrecision("quantity").notNull().default(1),
+  unitPrice: doublePrecision("unit_price").notNull().default(0),
+  totalPrice: doublePrecision("total_price").notNull().default(0),
+  vendorId: integer("vendor_id").references(() => vendors.id),
+  eventItemId: integer("event_item_id").references(() => eventItems.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const bookingStatusEvents = pgTable("booking_status_events", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").notNull().references(() => bookings.id),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  note: text("note"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const pushNotificationDevices = pgTable("push_notification_devices", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -418,9 +522,12 @@ export const insertAdminPermissionSchema = createInsertSchema(adminPermissions);
 
 // Event management schemas
 export const insertEventTypeSchema = createInsertSchema(eventTypes);
+export const insertEventTemplateSchema = createInsertSchema(eventTemplates);
+export const insertEventTemplateItemSchema = createInsertSchema(eventTemplateItems);
 export const insertEventItemSchema = createInsertSchema(eventItems);
 export const insertItemVendorOptionSchema = createInsertSchema(itemVendorOptions);
 export const insertQuestionnaireItemSchema = createInsertSchema(questionnaireItems);
+export const insertQuestionnaireOptionSchema = createInsertSchema(questionnaireOptions);
 
 // Enhanced bundle schemas
 export const insertEventBundleSchema = createInsertSchema(eventBundles);
@@ -429,6 +536,9 @@ export const insertBundleItemSchema = createInsertSchema(bundleItems);
 export const insertBookingConfirmationSchema = createInsertSchema(bookingConfirmations);
 export const insertPricingHistorySchema = createInsertSchema(pricingHistory);
 export const insertPaymentSchema = createInsertSchema(payments);
+export const insertBookingProposalSchema = createInsertSchema(bookingProposals);
+export const insertBookingProposalItemSchema = createInsertSchema(bookingProposalItems);
+export const insertBookingStatusEventSchema = createInsertSchema(bookingStatusEvents);
 
 // Relation definitions
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -440,6 +550,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   permissions: many(adminPermissions, { relationName: "user_permissions" }),
   grantedPermissions: many(adminPermissions, { relationName: "grantor" }),
   createdEventTypes: many(eventTypes),
+  createdEventTemplates: many(eventTemplates),
   createdQuestionnaireItems: many(questionnaireItems),
   createdEventBundles: many(eventBundles),
   pushNotificationDevices: many(pushNotificationDevices),
@@ -466,12 +577,15 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   client: one(users, { fields: [bookings.clientId], references: [users.id] }),
   eventType: one(eventTypes, { fields: [bookings.eventTypeId], references: [eventTypes.id] }),
   bundle: one(eventBundles, { fields: [bookings.bundleId], references: [eventBundles.id] }),
+  template: one(eventTemplates, { fields: [bookings.templateId], references: [eventTemplates.id] }),
   vendor: one(vendors, { fields: [bookings.vendorId], references: [vendors.id] }),
   service: one(services, { fields: [bookings.serviceId], references: [services.id] }),
   reviews: many(reviews),
   confirmations: many(bookingConfirmations),
   pricingHistory: many(pricingHistory),
   payments: many(payments),
+  proposals: many(bookingProposals),
+  statusEvents: many(bookingStatusEvents),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -492,24 +606,46 @@ export const eventTypesRelations = relations(eventTypes, ({ one, many }) => ({
   questionnaireItems: many(questionnaireItems),
   eventItems: many(eventItems),
   bundles: many(eventBundles),
+  templates: many(eventTemplates),
   bookings: many(bookings)
+}));
+
+export const eventTemplatesRelations = relations(eventTemplates, ({ one, many }) => ({
+  eventType: one(eventTypes, { fields: [eventTemplates.eventTypeId], references: [eventTypes.id] }),
+  sourceBundle: one(eventBundles, { fields: [eventTemplates.sourceBundleId], references: [eventBundles.id] }),
+  creator: one(users, { fields: [eventTemplates.createdBy], references: [users.id] }),
+  items: many(eventTemplateItems),
+  bookings: many(bookings),
 }));
 
 export const eventItemsRelations = relations(eventItems, ({ one, many }) => ({
   eventType: one(eventTypes, { fields: [eventItems.eventTypeId], references: [eventTypes.id] }),
   vendorOptions: many(itemVendorOptions),
   bundleItems: many(bundleItems),
+  templateItems: many(eventTemplateItems),
 }));
 
 export const itemVendorOptionsRelations = relations(itemVendorOptions, ({ one, many }) => ({
   eventItem: one(eventItems, { fields: [itemVendorOptions.eventItemId], references: [eventItems.id] }),
   vendor: one(vendors, { fields: [itemVendorOptions.vendorId], references: [vendors.id] }),
   bundleDefaults: many(bundleItems),
+  templateDefaults: many(eventTemplateItems),
 }));
 
-export const questionnaireItemsRelations = relations(questionnaireItems, ({ one }) => ({
+export const eventTemplateItemsRelations = relations(eventTemplateItems, ({ one }) => ({
+  template: one(eventTemplates, { fields: [eventTemplateItems.templateId], references: [eventTemplates.id] }),
+  eventItem: one(eventItems, { fields: [eventTemplateItems.eventItemId], references: [eventItems.id] }),
+  defaultOption: one(itemVendorOptions, { fields: [eventTemplateItems.defaultOptionId], references: [itemVendorOptions.id] }),
+}));
+
+export const questionnaireItemsRelations = relations(questionnaireItems, ({ one, many }) => ({
   eventType: one(eventTypes, { fields: [questionnaireItems.eventTypeId], references: [eventTypes.id] }),
-  creator: one(users, { fields: [questionnaireItems.createdBy], references: [users.id] })
+  creator: one(users, { fields: [questionnaireItems.createdBy], references: [users.id] }),
+  options: many(questionnaireOptions),
+}));
+
+export const questionnaireOptionsRelations = relations(questionnaireOptions, ({ one }) => ({
+  questionnaireItem: one(questionnaireItems, { fields: [questionnaireOptions.questionnaireItemId], references: [questionnaireItems.id] }),
 }));
 
 // Enhanced bundle relations
@@ -547,6 +683,23 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   booking: one(bookings, { fields: [payments.bookingId], references: [bookings.id] }),
 }));
 
+export const bookingProposalsRelations = relations(bookingProposals, ({ one, many }) => ({
+  booking: one(bookings, { fields: [bookingProposals.bookingId], references: [bookings.id] }),
+  creator: one(users, { fields: [bookingProposals.createdBy], references: [users.id] }),
+  items: many(bookingProposalItems),
+}));
+
+export const bookingProposalItemsRelations = relations(bookingProposalItems, ({ one }) => ({
+  proposal: one(bookingProposals, { fields: [bookingProposalItems.proposalId], references: [bookingProposals.id] }),
+  vendor: one(vendors, { fields: [bookingProposalItems.vendorId], references: [vendors.id] }),
+  eventItem: one(eventItems, { fields: [bookingProposalItems.eventItemId], references: [eventItems.id] }),
+}));
+
+export const bookingStatusEventsRelations = relations(bookingStatusEvents, ({ one }) => ({
+  booking: one(bookings, { fields: [bookingStatusEvents.bookingId], references: [bookings.id] }),
+  creator: one(users, { fields: [bookingStatusEvents.createdBy], references: [users.id] }),
+}));
+
 export const pushNotificationDevicesRelations = relations(pushNotificationDevices, ({ one }) => ({
   user: one(users, { fields: [pushNotificationDevices.userId], references: [users.id] }),
 }));
@@ -580,6 +733,12 @@ export type InsertAdminPermission = z.infer<typeof insertAdminPermissionSchema>;
 export type EventType = typeof eventTypes.$inferSelect;
 export type InsertEventType = z.infer<typeof insertEventTypeSchema>;
 
+export type EventTemplate = typeof eventTemplates.$inferSelect;
+export type InsertEventTemplate = z.infer<typeof insertEventTemplateSchema>;
+
+export type EventTemplateItem = typeof eventTemplateItems.$inferSelect;
+export type InsertEventTemplateItem = z.infer<typeof insertEventTemplateItemSchema>;
+
 export type EventItem = typeof eventItems.$inferSelect;
 export type InsertEventItem = z.infer<typeof insertEventItemSchema>;
 
@@ -588,6 +747,9 @@ export type InsertItemVendorOption = z.infer<typeof insertItemVendorOptionSchema
 
 export type QuestionnaireItem = typeof questionnaireItems.$inferSelect;
 export type InsertQuestionnaireItem = z.infer<typeof insertQuestionnaireItemSchema>;
+
+export type QuestionnaireOption = typeof questionnaireOptions.$inferSelect;
+export type InsertQuestionnaireOption = z.infer<typeof insertQuestionnaireOptionSchema>;
 
 // Enhanced bundle types
 export type EventBundle = typeof eventBundles.$inferSelect;
@@ -607,5 +769,14 @@ export type InsertPricingHistory = z.infer<typeof insertPricingHistorySchema>;
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+export type BookingProposal = typeof bookingProposals.$inferSelect;
+export type InsertBookingProposal = z.infer<typeof insertBookingProposalSchema>;
+
+export type BookingProposalItem = typeof bookingProposalItems.$inferSelect;
+export type InsertBookingProposalItem = z.infer<typeof insertBookingProposalItemSchema>;
+
+export type BookingStatusEvent = typeof bookingStatusEvents.$inferSelect;
+export type InsertBookingStatusEvent = z.infer<typeof insertBookingStatusEventSchema>;
 
 export type PushNotificationDevice = typeof pushNotificationDevices.$inferSelect;

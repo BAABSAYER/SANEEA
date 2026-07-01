@@ -9,6 +9,7 @@ export type EventType = {
   category?: string | null;
   images: string[];
   videos: string[];
+  availableCities?: CityOption[];
   packageCount: number;
   itemCount: number;
 };
@@ -31,17 +32,36 @@ export type EventPackageItem = {
 
 export type EventPackage = {
   id: number;
+  templateId?: number;
   eventTypeId: number;
+  sourceBundleId?: number | null;
   name: string;
   tier: string;
   description?: string | null;
   features: string[];
+  tags?: string[];
   images: string[];
   videos: string[];
   basePrice: number;
+  estimatedMinPrice?: number | null;
+  estimatedMaxPrice?: number | null;
   calculatedBasePrice: number;
   availableQuantity?: number;
   items: EventPackageItem[];
+};
+
+export type EventTemplate = EventPackage;
+
+export type EventTypeDetail = EventType & {
+  items: Array<{
+    id: number;
+    name: string;
+    description?: string | null;
+    category?: string | null;
+    isRequired?: boolean | null;
+  }>;
+  packages: EventPackage[];
+  templates?: EventTemplate[];
 };
 
 export type VendorOption = {
@@ -60,6 +80,7 @@ export type VendorOption = {
 
 export type CustomizationItem = {
   bundleItemId: number;
+  templateItemId?: number;
   eventItemId: number;
   defaultOptionId?: number | null;
   quantity: number;
@@ -68,6 +89,8 @@ export type CustomizationItem = {
   itemDescription?: string | null;
   itemCategory?: string | null;
   isRequired?: boolean;
+  images?: string[];
+  videos?: string[];
   vendorOptions: VendorOption[];
   defaultOption: VendorOption | null;
 };
@@ -75,6 +98,7 @@ export type CustomizationItem = {
 export type PackageCustomization = {
   eventType: EventType;
   package: EventPackage;
+  template?: EventTemplate;
   items: CustomizationItem[];
 };
 
@@ -87,9 +111,15 @@ export type BookingSummary = {
   guestCount: number;
   budget?: number | null;
   totalPrice: number;
+  basePrice?: number | null;
+  optionsPrice?: number | null;
+  quotationNotes?: string | null;
+  quotationValidUntil?: string | null;
   eventTypeName?: string | null;
   eventTypeIcon?: string | null;
   eventTypeImages: string[];
+  templateId?: number | null;
+  templateName?: string | null;
   bundleName?: string | null;
   bundleTier?: string | null;
 };
@@ -111,6 +141,33 @@ export type PaymentRequest = {
   paidAt?: string | null;
 };
 
+export type BookingProposalItem = {
+  id: number;
+  proposalId: number;
+  title: string;
+  description?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  vendorId?: number | null;
+  eventItemId?: number | null;
+};
+
+export type BookingProposal = {
+  id: number;
+  bookingId: number;
+  status: string;
+  totalPrice: number;
+  depositAmount?: number | null;
+  finalAmount?: number | null;
+  notes?: string | null;
+  validUntil?: string | null;
+  sentAt?: string | null;
+  acceptedAt?: string | null;
+  rejectedAt?: string | null;
+  items: BookingProposalItem[];
+};
+
 type UploadIntent = {
   provider: "s3";
   bucket: string;
@@ -125,7 +182,7 @@ export type QuestionnaireItem = {
   eventTypeId: number;
   questionText: string;
   questionType: "text" | "textarea" | "number" | "select" | "checkbox" | "date" | "time" | string;
-  options?: string[] | null;
+  options?: Array<string | { id?: number; value: string; labelAr?: string; labelEn?: string | null; imageUrl?: string | null }> | null;
   required?: boolean | null;
   displayOrder?: number | null;
 };
@@ -196,8 +253,20 @@ export function getEventPackages(eventTypeId: number) {
   return apiRequest<EventPackage[]>(`/api/mobile/event-types/${eventTypeId}/packages`, { auth: false });
 }
 
+export function getEventTemplates(eventTypeId: number) {
+  return apiRequest<EventTemplate[]>(`/api/mobile/event-types/${eventTypeId}/templates`, { auth: false });
+}
+
+export function getEventTypeDetail(eventTypeId: number) {
+  return apiRequest<EventTypeDetail>(`/api/mobile/event-types/${eventTypeId}`, { auth: false });
+}
+
 export function getPackageCustomization(packageId: number) {
   return apiRequest<PackageCustomization>(`/api/mobile/packages/${packageId}/customization`, { auth: false });
+}
+
+export function getTemplateCustomization(templateId: number) {
+  return apiRequest<PackageCustomization>(`/api/mobile/templates/${templateId}/customization`, { auth: false });
 }
 
 export function getQuestionnaireItems(eventTypeId: number) {
@@ -210,6 +279,7 @@ export function getEventSettings() {
 
 export function createBooking(input: {
   eventTypeId: number;
+  templateId?: number | null;
   bundleId?: number | null;
   eventDate: string;
   eventTime?: string;
@@ -232,7 +302,21 @@ export function getBookings() {
 }
 
 export function getBooking(id: number) {
-  return apiRequest<BookingSummary & { packageItems: EventPackageItem[]; payments: PaymentRequest[] }>(`/api/mobile/bookings/${id}`);
+  return apiRequest<BookingSummary & { packageItems: EventPackageItem[]; payments: PaymentRequest[]; proposal?: BookingProposal | null }>(`/api/mobile/bookings/${id}`);
+}
+
+export function acceptBookingProposal(bookingId: number) {
+  return apiRequest<BookingSummary>(`/api/mobile/bookings/${bookingId}/proposal/accept`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function rejectBookingProposal(bookingId: number, note?: string) {
+  return apiRequest<BookingSummary>(`/api/mobile/bookings/${bookingId}/proposal/reject`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+  });
 }
 
 export function createMobileUploadIntent(input: { filename: string; contentType: string; folder?: string }) {

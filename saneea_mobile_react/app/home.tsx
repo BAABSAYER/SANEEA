@@ -47,7 +47,12 @@ export default function HomeScreen() {
                 <Text style={styles.icon}>{event.icon || "س"}</Text>
               </ImageBackground>
               <Text style={styles.name}>{event.name}</Text>
-              <Text style={styles.meta}>{t("itemCount", { count: event.packageCount })}</Text>
+              <Text style={styles.meta}>
+                {t("templateCount", {
+                  count: event.packageCount,
+                  defaultValue: "{{count}} options",
+                })}
+              </Text>
             </Pressable>
           ))}
         </View>

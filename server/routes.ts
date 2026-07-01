@@ -10,20 +10,23 @@ import { paymentGateway } from "./gateways/payment";
 import { whatsappGateway } from "./gateways/whatsapp";
 import { pushNotificationGateway } from "./gateways/push";
 import { erpGateway } from "./gateways/erp";
-import { activeCityValues, getEventSettings, saveEventSettings } from "./platform-settings";
+import { getEventSettings, saveEventSettings, type CityOption, type EventSettings } from "./platform-settings";
 import { 
   InsertVendor, InsertBooking, InsertMessage, InsertEventType, InsertQuestionnaireItem,
   InsertEventBundle, InsertBundleOption, InsertBookingConfirmation,
-  BOOKING_STATUS, USER_TYPES, BUNDLE_TIERS, PAYMENT_STATUS, messages, users, User, EventBundle, BundleOption,
+  BOOKING_STATUS, USER_TYPES, BUNDLE_TIERS, PAYMENT_STATUS, PROPOSAL_STATUS, messages, users, User, EventBundle, BundleOption,
   bookings as bookingsTable, eventBundles as eventBundlesTable, pricingHistory as pricingHistoryTable,
   eventTypes as eventTypesTable, eventItems as eventItemsTable, itemVendorOptions as itemVendorOptionsTable,
-  questionnaireItems as questionnaireItemsTable,
+  questionnaireItems as questionnaireItemsTable, questionnaireOptions as questionnaireOptionsTable,
+  eventTemplates as eventTemplatesTable, eventTemplateItems as eventTemplateItemsTable,
   bundleItems as bundleItemsTable, vendors as vendorsTable, services as servicesTable, payments as paymentsTable,
   bookingConfirmations as bookingConfirmationsTable, reviews as reviewsTable,
+  bookingProposals as bookingProposalsTable, bookingProposalItems as bookingProposalItemsTable,
+  bookingStatusEvents as bookingStatusEventsTable,
   pushNotificationDevices as pushNotificationDevicesTable
 } from "@shared/schema";
 import { z } from "zod";
-import { eq, or, and, gt, sql } from "drizzle-orm";
+import { eq, or, and, gt, sql, desc, inArray } from "drizzle-orm";
 
 interface WSMessage {
   type: string;
@@ -298,6 +301,73 @@ const eventSettingsSchema = z.object({
   availableCities: z.array(cityOptionSchema).min(1).max(100),
 });
 
+const eventCityValuesSchema = z.array(z.string().trim().min(1).max(120)).max(100).default([]);
+
+function normalizeEventCityValues(input: unknown): string[] {
+  const parsed = eventCityValuesSchema.safeParse(input);
+  if (!parsed.success) return [];
+
+  const seen = new Set<string>();
+  return parsed.data.filter((city) => {
+    const key = city.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function resolveEventCityOptions(settings: EventSettings, eventType: { availableCities?: unknown }): CityOption[] {
+  const activeCities = settings.availableCities
+    .filter((city) => city.active)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+  const eventCityValues = normalizeEventCityValues(eventType.availableCities);
+
+  if (eventCityValues.length === 0) {
+    return activeCities;
+  }
+
+  const allowed = new Set(eventCityValues.map((city) => city.toLowerCase()));
+  return activeCities.filter((city) => allowed.has(city.value.toLowerCase()));
+}
+
+function resolveEventCityValueSet(settings: EventSettings, eventType: { availableCities?: unknown }) {
+  return new Set(resolveEventCityOptions(settings, eventType).map((city) => city.value.toLowerCase()));
+}
+
+const eventTemplateSchema = z.object({
+  eventTypeId: z.coerce.number().int().positive(),
+  sourceBundleId: z.coerce.number().int().positive().optional().nullable(),
+  name: z.string().trim().min(1).max(220),
+  description: z.string().trim().max(4000).optional().nullable(),
+  estimatedMinPrice: z.coerce.number().min(0).optional().nullable(),
+  estimatedMaxPrice: z.coerce.number().min(0).optional().nullable(),
+  images: z.array(z.string().trim().url()).default([]),
+  videos: z.array(z.string().trim().url()).default([]),
+  tags: z.array(z.string().trim().min(1).max(80)).default([]),
+  isActive: z.coerce.boolean().default(true),
+  displayOrder: z.coerce.number().int().min(0).max(10000).default(0),
+});
+
+const eventTemplateItemSchema = z.object({
+  eventItemId: z.coerce.number().int().positive().optional().nullable(),
+  defaultOptionId: z.coerce.number().int().positive().optional().nullable(),
+  title: z.string().trim().min(1).max(220),
+  description: z.string().trim().max(2000).optional().nullable(),
+  images: z.array(z.string().trim().url()).default([]),
+  videos: z.array(z.string().trim().url()).default([]),
+  quantity: z.coerce.number().positive().max(999).default(1),
+  isRequired: z.coerce.boolean().default(true),
+  displayOrder: z.coerce.number().int().min(0).max(10000).default(0),
+});
+
+const questionnaireOptionSchema = z.object({
+  labelAr: z.string().trim().min(1).max(220),
+  labelEn: z.string().trim().max(220).optional().nullable(),
+  value: z.string().trim().min(1).max(220),
+  imageUrl: z.string().trim().url().optional().nullable(),
+  displayOrder: z.coerce.number().int().min(0).max(10000).default(0),
+});
+
 const bookingMessageTemplateSchema = z.object({
   template: z.enum([
     "booking_received",
@@ -312,6 +382,7 @@ const bookingMessageTemplateSchema = z.object({
 
 const mobileBookingSchema = z.object({
   eventTypeId: z.coerce.number().int().positive(),
+  templateId: z.coerce.number().int().positive().optional().nullable(),
   bundleId: z.coerce.number().int().positive().optional().nullable(),
   eventDate: z.coerce.date(),
   eventTime: z.string().optional().nullable(),
@@ -322,6 +393,29 @@ const mobileBookingSchema = z.object({
   clientAttachments: z.array(clientAttachmentSchema).default([]),
   questionnaireResponses: z.record(z.unknown()).optional().default({}),
   selectedItemOptions: z.array(selectedEventItemOptionSchema).default([]),
+});
+
+const proposalDecisionSchema = z.object({
+  note: z.string().max(2000).optional().nullable(),
+});
+
+const proposalItemSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(1000).optional().nullable(),
+  quantity: z.coerce.number().positive().max(999).default(1),
+  unitPrice: z.coerce.number().min(0).max(10_000_000),
+  vendorId: z.coerce.number().int().positive().optional().nullable(),
+  eventItemId: z.coerce.number().int().positive().optional().nullable(),
+});
+
+const createProposalSchema = z.object({
+  totalPrice: z.coerce.number().min(0).max(100_000_000).optional(),
+  depositAmount: z.coerce.number().min(0).max(100_000_000).optional().nullable(),
+  finalAmount: z.coerce.number().min(0).max(100_000_000).optional().nullable(),
+  notes: z.string().trim().max(4000).optional().nullable(),
+  validUntil: z.coerce.date().optional().nullable(),
+  items: z.array(proposalItemSchema).min(1),
+  sendNow: z.coerce.boolean().default(true),
 });
 
 const createReviewSchema = z.object({
@@ -374,6 +468,290 @@ const bookingStatusFlow: Record<string, string[]> = {
 function canTransitionBookingStatus(fromStatus: string, toStatus: string) {
   if (fromStatus === toStatus) return true;
   return (bookingStatusFlow[fromStatus] || []).includes(toStatus);
+}
+
+async function recordBookingStatusEvent(input: {
+  bookingId: number;
+  fromStatus?: string | null;
+  toStatus: string;
+  note?: string | null;
+  createdBy?: number | null;
+}) {
+  await db.insert(bookingStatusEventsTable).values({
+    bookingId: input.bookingId,
+    fromStatus: input.fromStatus || null,
+    toStatus: input.toStatus,
+    note: input.note || null,
+    createdBy: input.createdBy || null,
+  });
+}
+
+async function ensureTemplatesForEventType(eventTypeId: number, createdBy?: number | null) {
+  const existingTemplates = await db
+    .select()
+    .from(eventTemplatesTable)
+    .where(eq(eventTemplatesTable.eventTypeId, eventTypeId))
+    .orderBy(eventTemplatesTable.displayOrder);
+
+  const existingSourceIds = new Set(existingTemplates.map((template) => template.sourceBundleId).filter(Boolean));
+  const bundles = await db
+    .select()
+    .from(eventBundlesTable)
+    .where(and(eq(eventBundlesTable.eventTypeId, eventTypeId), eq(eventBundlesTable.isActive, true)))
+    .orderBy(eventBundlesTable.displayOrder);
+
+  const missingBundles = bundles.filter((bundle) => !existingSourceIds.has(bundle.id));
+  if (missingBundles.length > 0) {
+    await db.insert(eventTemplatesTable).values(missingBundles.map((bundle) => ({
+      eventTypeId: bundle.eventTypeId,
+      sourceBundleId: bundle.id,
+      name: bundle.name,
+      description: bundle.description || null,
+      estimatedMinPrice: bundle.basePrice,
+      estimatedMaxPrice: bundle.basePrice,
+      images: Array.isArray(bundle.images) ? bundle.images : [],
+      videos: Array.isArray(bundle.videos) ? bundle.videos : [],
+      tags: Array.isArray(bundle.features) ? bundle.features.map(String) : [],
+      isActive: bundle.isActive,
+      displayOrder: bundle.displayOrder || 0,
+      createdBy: createdBy || bundle.createdBy || null,
+    })));
+  }
+
+  return db
+    .select()
+    .from(eventTemplatesTable)
+    .where(and(eq(eventTemplatesTable.eventTypeId, eventTypeId), eq(eventTemplatesTable.isActive, true)))
+    .orderBy(eventTemplatesTable.displayOrder);
+}
+
+type QuestionWithVisualOptions = {
+  id: number;
+  options?: unknown;
+  [key: string]: unknown;
+};
+
+async function withVisualQuestionnaireOptions<T extends QuestionWithVisualOptions>(questions: T[]) {
+  if (questions.length === 0) return questions;
+  const options = await db
+    .select()
+    .from(questionnaireOptionsTable)
+    .orderBy(questionnaireOptionsTable.displayOrder);
+
+  const optionMap = options.reduce((acc, option) => {
+    if (!questions.some((question) => question.id === option.questionnaireItemId)) return acc;
+    if (!acc[option.questionnaireItemId]) acc[option.questionnaireItemId] = [];
+    acc[option.questionnaireItemId].push({
+      id: option.id,
+      value: option.value,
+      labelAr: option.labelAr,
+      labelEn: option.labelEn || option.labelAr,
+      imageUrl: option.imageUrl || null,
+      displayOrder: option.displayOrder || 0,
+    });
+    return acc;
+  }, {} as Record<number, Array<{
+    id: number;
+    value: string;
+    labelAr: string;
+    labelEn: string;
+    imageUrl: string | null;
+    displayOrder: number;
+  }>>);
+
+  return questions.map((question) => ({
+    ...question,
+    options: optionMap[question.id]?.length ? optionMap[question.id] : question.options,
+  }));
+}
+
+function normalizeArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
+}
+
+function mobileTemplateCard(input: {
+  template: typeof eventTemplatesTable.$inferSelect;
+  sourceBundle?: typeof eventBundlesTable.$inferSelect | null;
+  items?: unknown[];
+  calculatedBasePrice?: number | null;
+}) {
+  const sourceBundle = input.sourceBundle || null;
+  const estimatedMinPrice = input.template.estimatedMinPrice ?? sourceBundle?.basePrice ?? 0;
+  const estimatedMaxPrice = input.template.estimatedMaxPrice ?? estimatedMinPrice;
+  return {
+    id: input.template.id,
+    templateId: input.template.id,
+    eventTypeId: input.template.eventTypeId,
+    sourceBundleId: input.template.sourceBundleId || null,
+    name: input.template.name,
+    tier: sourceBundle?.tier || "template",
+    description: input.template.description || sourceBundle?.description || null,
+    features: normalizeArray(input.template.tags?.length ? input.template.tags : sourceBundle?.features),
+    tags: normalizeArray(input.template.tags),
+    images: normalizeArray(input.template.images?.length ? input.template.images : sourceBundle?.images),
+    videos: normalizeArray(input.template.videos?.length ? input.template.videos : sourceBundle?.videos),
+    basePrice: estimatedMinPrice,
+    estimatedMinPrice,
+    estimatedMaxPrice,
+    calculatedBasePrice: input.calculatedBasePrice ?? estimatedMinPrice,
+    availableQuantity: sourceBundle?.availableQuantity ?? null,
+    items: input.items || [],
+  };
+}
+
+async function getMobileTemplatesForEventType(eventTypeId: number, createdBy?: number | null) {
+  const templates = await ensureTemplatesForEventType(eventTypeId, createdBy);
+  const templateIds = templates.map((template) => template.id);
+  const sourceBundleIds = templates
+    .map((template) => template.sourceBundleId)
+    .filter((id): id is number => typeof id === "number");
+
+  const sourceBundles = sourceBundleIds.length
+    ? await db.select().from(eventBundlesTable).where(inArray(eventBundlesTable.id, sourceBundleIds))
+    : [];
+  const sourceBundleById = new Map(sourceBundles.map((bundle) => [bundle.id, bundle]));
+
+  const templateItemRows = templateIds.length
+    ? await db
+        .select({
+          id: eventTemplateItemsTable.id,
+          templateId: eventTemplateItemsTable.templateId,
+          eventItemId: eventTemplateItemsTable.eventItemId,
+          defaultOptionId: eventTemplateItemsTable.defaultOptionId,
+          title: eventTemplateItemsTable.title,
+          description: eventTemplateItemsTable.description,
+          images: eventTemplateItemsTable.images,
+          videos: eventTemplateItemsTable.videos,
+          quantity: eventTemplateItemsTable.quantity,
+          isRequired: eventTemplateItemsTable.isRequired,
+          displayOrder: eventTemplateItemsTable.displayOrder,
+          itemName: eventItemsTable.name,
+          itemDescription: eventItemsTable.description,
+          itemCategory: eventItemsTable.category,
+          optionName: itemVendorOptionsTable.optionName,
+          optionDescription: itemVendorOptionsTable.description,
+          optionPrice: itemVendorOptionsTable.price,
+          optionImages: itemVendorOptionsTable.images,
+          vendorId: itemVendorOptionsTable.vendorId,
+          vendorName: vendorsTable.businessName,
+        })
+        .from(eventTemplateItemsTable)
+        .leftJoin(eventItemsTable, eq(eventTemplateItemsTable.eventItemId, eventItemsTable.id))
+        .leftJoin(itemVendorOptionsTable, eq(eventTemplateItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+        .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+        .where(inArray(eventTemplateItemsTable.templateId, templateIds))
+    : [];
+
+  const bundleItemRows = sourceBundleIds.length
+    ? await db
+        .select({
+          id: bundleItemsTable.id,
+          bundleId: bundleItemsTable.bundleId,
+          eventItemId: bundleItemsTable.eventItemId,
+          defaultOptionId: bundleItemsTable.defaultOptionId,
+          isIncluded: bundleItemsTable.isIncluded,
+          quantity: bundleItemsTable.quantity,
+          priceOverride: bundleItemsTable.priceOverride,
+          displayOrder: bundleItemsTable.displayOrder,
+          itemName: eventItemsTable.name,
+          itemDescription: eventItemsTable.description,
+          itemCategory: eventItemsTable.category,
+          optionName: itemVendorOptionsTable.optionName,
+          optionDescription: itemVendorOptionsTable.description,
+          optionPrice: itemVendorOptionsTable.price,
+          optionImages: itemVendorOptionsTable.images,
+          vendorId: itemVendorOptionsTable.vendorId,
+          vendorName: vendorsTable.businessName,
+        })
+        .from(bundleItemsTable)
+        .leftJoin(eventItemsTable, eq(bundleItemsTable.eventItemId, eventItemsTable.id))
+        .leftJoin(itemVendorOptionsTable, eq(bundleItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+        .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+        .where(and(inArray(bundleItemsTable.bundleId, sourceBundleIds), eq(bundleItemsTable.isIncluded, true)))
+    : [];
+
+  const templateItemsByTemplate = templateItemRows.reduce((acc, item) => {
+    if (!acc[item.templateId]) acc[item.templateId] = [];
+    acc[item.templateId].push(item);
+    return acc;
+  }, {} as Record<number, typeof templateItemRows>);
+
+  const bundleItemsByBundle = bundleItemRows.reduce((acc, item) => {
+    if (!acc[item.bundleId]) acc[item.bundleId] = [];
+    acc[item.bundleId].push(item);
+    return acc;
+  }, {} as Record<number, typeof bundleItemRows>);
+
+  return templates.map((template) => {
+    const sourceBundle = template.sourceBundleId ? sourceBundleById.get(template.sourceBundleId) : null;
+    const directTemplateItems = (templateItemsByTemplate[template.id] || []).sort(
+      (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)
+    );
+    const fallbackBundleItems = template.sourceBundleId
+      ? (bundleItemsByBundle[template.sourceBundleId] || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      : [];
+
+    const items = directTemplateItems.length
+      ? directTemplateItems.map((item) => ({
+          id: item.id,
+          templateItemId: item.id,
+          eventItemId: item.eventItemId,
+          itemName: item.title || item.itemName,
+          itemDescription: item.description || item.itemDescription,
+          itemCategory: item.itemCategory,
+          optionName: item.optionName,
+          optionDescription: item.optionDescription,
+          optionPrice: item.optionPrice,
+          optionImages: normalizeArray(item.images?.length ? item.images : item.optionImages),
+          vendorId: item.vendorId,
+          vendorName: item.vendorName,
+          quantity: item.quantity || 1,
+          priceOverride: null,
+        }))
+      : fallbackBundleItems;
+
+    const itemTotal = items.reduce((sum, item: any) => {
+      const price = item.priceOverride ?? item.optionPrice ?? 0;
+      return sum + price * (item.quantity || 1);
+    }, 0);
+
+    return mobileTemplateCard({
+      template,
+      sourceBundle,
+      items,
+      calculatedBasePrice: items.length > 0 ? itemTotal : null,
+    });
+  });
+}
+
+async function getActiveVendorOptionsByItem(eventItemIds: number[]) {
+  if (eventItemIds.length === 0) return {};
+  const options = await db
+    .select({
+      id: itemVendorOptionsTable.id,
+      eventItemId: itemVendorOptionsTable.eventItemId,
+      vendorId: itemVendorOptionsTable.vendorId,
+      optionName: itemVendorOptionsTable.optionName,
+      description: itemVendorOptionsTable.description,
+      price: itemVendorOptionsTable.price,
+      images: itemVendorOptionsTable.images,
+      isDefault: itemVendorOptionsTable.isDefault,
+      vendorName: vendorsTable.businessName,
+      vendorCategory: vendorsTable.category,
+      vendorRating: vendorsTable.rating,
+    })
+    .from(itemVendorOptionsTable)
+    .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+    .where(and(inArray(itemVendorOptionsTable.eventItemId, eventItemIds), eq(itemVendorOptionsTable.isActive, true)));
+
+  return options.reduce((acc, option) => {
+    if (!acc[option.eventItemId]) acc[option.eventItemId] = [];
+    acc[option.eventItemId].push({
+      ...option,
+      images: normalizeArray(option.images),
+    });
+    return acc;
+  }, {} as Record<number, Array<typeof options[number] & { images: string[] }>>);
 }
 
 function compactVendorProfileInput(input: VendorProfileInput): Partial<InsertVendor> {
@@ -1192,7 +1570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const questionnaireItems = await storage.getQuestionnaireItemsByEventType(id);
-      res.json(questionnaireItems);
+      res.json(await withVisualQuestionnaireOptions(questionnaireItems));
     } catch (error) {
       console.error('Error fetching questionnaire items:', error);
       res.status(500).json({ message: 'Failed to fetch questionnaire items' });
@@ -1217,6 +1595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         icon: req.body.icon,
         images: Array.isArray(req.body.images) ? req.body.images : [],
         videos: Array.isArray(req.body.videos) ? req.body.videos : [],
+        availableCities: normalizeEventCityValues(req.body.availableCities),
         category: req.body.category,
         isActive: req.body.isActive ?? true,
         createdByType: 'admin',
@@ -1247,7 +1626,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid event type ID' });
       }
       
-      const eventType = await storage.updateEventType(id, req.body);
+      const eventTypeData = {
+        ...req.body,
+        ...(Object.prototype.hasOwnProperty.call(req.body, "availableCities")
+          ? { availableCities: normalizeEventCityValues(req.body.availableCities) }
+          : {}),
+      };
+
+      const eventType = await storage.updateEventType(id, eventTypeData);
       if (!eventType) {
         return res.status(404).json({ message: 'Event type not found' });
       }
@@ -1289,8 +1675,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // You'd need to add a method to get all questionnaire items
       // This is an admin function, so we could add permissions check here
-      const questionnaireItems = await db.query.questionnaireItems.findMany();
-      res.json(questionnaireItems);
+      const questionnaireItems = await db.query.questionnaireItems.findMany({
+        orderBy: (items, { asc }) => [asc(items.eventTypeId), asc(items.displayOrder)],
+      });
+      res.json(await withVisualQuestionnaireOptions(questionnaireItems));
     } catch (error) {
       console.error('Error fetching questionnaire items:', error);
       res.status(500).json({ message: 'Failed to fetch questionnaire items' });
@@ -1312,7 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const questions = await storage.getQuestionnaireItemsByEventType(eventTypeId);
-      res.json(questions);
+      res.json(await withVisualQuestionnaireOptions(questions));
     } catch (error) {
       console.error('Error fetching questions for event type:', error);
       res.status(500).json({ message: 'Failed to fetch questions' });
@@ -1328,7 +1716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const questions = await storage.getQuestionnaireItemsByEventType(eventTypeId);
-      res.json(questions);
+      res.json(await withVisualQuestionnaireOptions(questions));
     } catch (error) {
       console.error('Error fetching questionnaire items for event type:', error);
       res.status(500).json({ message: 'Failed to fetch questionnaire items' });
@@ -2074,6 +2462,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/admin/event-templates', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const eventTypeId = req.query.eventTypeId ? Number(req.query.eventTypeId) : null;
+      if (eventTypeId && !Number.isNaN(eventTypeId)) {
+        await ensureTemplatesForEventType(eventTypeId, req.user.id);
+      }
+
+      const templateSelect = {
+          id: eventTemplatesTable.id,
+          eventTypeId: eventTemplatesTable.eventTypeId,
+          sourceBundleId: eventTemplatesTable.sourceBundleId,
+          name: eventTemplatesTable.name,
+          description: eventTemplatesTable.description,
+          estimatedMinPrice: eventTemplatesTable.estimatedMinPrice,
+          estimatedMaxPrice: eventTemplatesTable.estimatedMaxPrice,
+          images: eventTemplatesTable.images,
+          videos: eventTemplatesTable.videos,
+          tags: eventTemplatesTable.tags,
+          isActive: eventTemplatesTable.isActive,
+          displayOrder: eventTemplatesTable.displayOrder,
+          eventTypeName: eventTypesTable.name,
+      };
+      const templates = eventTypeId && !Number.isNaN(eventTypeId)
+        ? await db
+            .select(templateSelect)
+            .from(eventTemplatesTable)
+            .leftJoin(eventTypesTable, eq(eventTemplatesTable.eventTypeId, eventTypesTable.id))
+            .where(eq(eventTemplatesTable.eventTypeId, eventTypeId))
+            .orderBy(eventTemplatesTable.displayOrder)
+        : await db
+            .select(templateSelect)
+            .from(eventTemplatesTable)
+            .leftJoin(eventTypesTable, eq(eventTemplatesTable.eventTypeId, eventTypesTable.id))
+            .orderBy(eventTemplatesTable.displayOrder);
+
+      res.json(templates.map((template) => ({
+        ...template,
+        images: template.images || [],
+        videos: template.videos || [],
+        tags: template.tags || [],
+      })));
+    } catch (error) {
+      console.error('Error fetching event templates:', error);
+      res.status(500).json({ message: 'Failed to fetch event templates' });
+    }
+  });
+
+  app.post('/api/admin/event-templates', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const input = eventTemplateSchema.parse(req.body);
+      const [created] = await db
+        .insert(eventTemplatesTable)
+        .values({ ...input, createdBy: req.user.id })
+        .returning();
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid template data', errors: error.errors });
+      console.error('Error creating event template:', error);
+      res.status(500).json({ message: 'Failed to create event template' });
+    }
+  });
+
+  app.patch('/api/admin/event-templates/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid template ID' });
+      const input = eventTemplateSchema.partial().parse(req.body);
+      const [updated] = await db
+        .update(eventTemplatesTable)
+        .set({ ...input, updatedAt: new Date() })
+        .where(eq(eventTemplatesTable.id, id))
+        .returning();
+      if (!updated) return res.status(404).json({ message: 'Template not found' });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid template data', errors: error.errors });
+      console.error('Error updating event template:', error);
+      res.status(500).json({ message: 'Failed to update event template' });
+    }
+  });
+
+  app.delete('/api/admin/event-templates/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid template ID' });
+      await db.delete(eventTemplateItemsTable).where(eq(eventTemplateItemsTable.templateId, id));
+      await db.delete(eventTemplatesTable).where(eq(eventTemplatesTable.id, id));
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting event template:', error);
+      res.status(500).json({ message: 'Failed to delete event template' });
+    }
+  });
+
+  app.get('/api/admin/event-templates/:templateId/items', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const templateId = Number(req.params.templateId);
+      if (Number.isNaN(templateId)) return res.status(400).json({ message: 'Invalid template ID' });
+      const items = await db
+        .select({
+          id: eventTemplateItemsTable.id,
+          templateId: eventTemplateItemsTable.templateId,
+          eventItemId: eventTemplateItemsTable.eventItemId,
+          defaultOptionId: eventTemplateItemsTable.defaultOptionId,
+          title: eventTemplateItemsTable.title,
+          description: eventTemplateItemsTable.description,
+          images: eventTemplateItemsTable.images,
+          videos: eventTemplateItemsTable.videos,
+          quantity: eventTemplateItemsTable.quantity,
+          isRequired: eventTemplateItemsTable.isRequired,
+          displayOrder: eventTemplateItemsTable.displayOrder,
+          eventItemName: eventItemsTable.name,
+          defaultOptionName: itemVendorOptionsTable.optionName,
+        })
+        .from(eventTemplateItemsTable)
+        .leftJoin(eventItemsTable, eq(eventTemplateItemsTable.eventItemId, eventItemsTable.id))
+        .leftJoin(itemVendorOptionsTable, eq(eventTemplateItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+        .where(eq(eventTemplateItemsTable.templateId, templateId))
+        .orderBy(eventTemplateItemsTable.displayOrder);
+      res.json(items.map((item) => ({ ...item, images: item.images || [], videos: item.videos || [] })));
+    } catch (error) {
+      console.error('Error fetching template items:', error);
+      res.status(500).json({ message: 'Failed to fetch template items' });
+    }
+  });
+
+  app.post('/api/admin/event-templates/:templateId/items', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const templateId = Number(req.params.templateId);
+      if (Number.isNaN(templateId)) return res.status(400).json({ message: 'Invalid template ID' });
+      const input = eventTemplateItemSchema.parse(req.body);
+      const [created] = await db
+        .insert(eventTemplateItemsTable)
+        .values({ ...input, templateId })
+        .returning();
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid template item data', errors: error.errors });
+      console.error('Error creating template item:', error);
+      res.status(500).json({ message: 'Failed to create template item' });
+    }
+  });
+
+  app.patch('/api/admin/event-template-items/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid template item ID' });
+      const input = eventTemplateItemSchema.partial().parse(req.body);
+      const [updated] = await db
+        .update(eventTemplateItemsTable)
+        .set({ ...input, updatedAt: new Date() })
+        .where(eq(eventTemplateItemsTable.id, id))
+        .returning();
+      if (!updated) return res.status(404).json({ message: 'Template item not found' });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid template item data', errors: error.errors });
+      console.error('Error updating template item:', error);
+      res.status(500).json({ message: 'Failed to update template item' });
+    }
+  });
+
+  app.delete('/api/admin/event-template-items/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid template item ID' });
+      await db.delete(eventTemplateItemsTable).where(eq(eventTemplateItemsTable.id, id));
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting template item:', error);
+      res.status(500).json({ message: 'Failed to delete template item' });
+    }
+  });
+
+  app.get('/api/questionnaire-items/:questionId/options', async (req, res) => {
+    try {
+      const questionId = Number(req.params.questionId);
+      if (Number.isNaN(questionId)) return res.status(400).json({ message: 'Invalid question ID' });
+      const options = await db
+        .select()
+        .from(questionnaireOptionsTable)
+        .where(eq(questionnaireOptionsTable.questionnaireItemId, questionId))
+        .orderBy(questionnaireOptionsTable.displayOrder);
+      res.json(options);
+    } catch (error) {
+      console.error('Error fetching questionnaire options:', error);
+      res.status(500).json({ message: 'Failed to fetch questionnaire options' });
+    }
+  });
+
+  app.post('/api/admin/questionnaire-items/:questionId/options', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const questionId = Number(req.params.questionId);
+      if (Number.isNaN(questionId)) return res.status(400).json({ message: 'Invalid question ID' });
+      const input = questionnaireOptionSchema.parse(req.body);
+      const [created] = await db
+        .insert(questionnaireOptionsTable)
+        .values({ ...input, questionnaireItemId: questionId })
+        .returning();
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid questionnaire option data', errors: error.errors });
+      console.error('Error creating questionnaire option:', error);
+      res.status(500).json({ message: 'Failed to create questionnaire option' });
+    }
+  });
+
+  app.patch('/api/admin/questionnaire-options/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid option ID' });
+      const input = questionnaireOptionSchema.partial().parse(req.body);
+      const [updated] = await db
+        .update(questionnaireOptionsTable)
+        .set(input)
+        .where(eq(questionnaireOptionsTable.id, id))
+        .returning();
+      if (!updated) return res.status(404).json({ message: 'Questionnaire option not found' });
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: 'Invalid questionnaire option data', errors: error.errors });
+      console.error('Error updating questionnaire option:', error);
+      res.status(500).json({ message: 'Failed to update questionnaire option' });
+    }
+  });
+
+  app.delete('/api/admin/questionnaire-options/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid option ID' });
+      await db.delete(questionnaireOptionsTable).where(eq(questionnaireOptionsTable.id, id));
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting questionnaire option:', error);
+      res.status(500).json({ message: 'Failed to delete questionnaire option' });
+    }
+  });
+
   // Mobile API: event-centric read model for the React mobile client.
   app.get('/api/mobile/event-types', async (req, res) => {
     try {
@@ -2083,25 +2742,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(eventTypesTable.isActive, true))
         .orderBy(eventTypesTable.name);
 
-      const activeBundles = await db
-        .select()
-        .from(eventBundlesTable)
-        .where(eq(eventBundlesTable.isActive, true));
-
       const items = await db
         .select()
         .from(eventItemsTable)
         .where(eq(eventItemsTable.isActive, true));
 
-      const bundleCountByEvent = activeBundles.reduce((acc, bundle) => {
-        acc[bundle.eventTypeId] = (acc[bundle.eventTypeId] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>);
+      const templateCountEntries = await Promise.all(
+        eventTypes.map(async (eventType) => [eventType.id, (await ensureTemplatesForEventType(eventType.id)).length] as const)
+      );
+      const templateCountByEvent = Object.fromEntries(templateCountEntries);
 
       const itemCountByEvent = items.reduce((acc, item) => {
         acc[item.eventTypeId] = (acc[item.eventTypeId] || 0) + 1;
         return acc;
       }, {} as Record<number, number>);
+
+      const eventSettings = await getEventSettings();
 
       res.json(eventTypes.map((eventType) => ({
         id: eventType.id,
@@ -2111,7 +2767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: eventType.category,
         images: eventType.images || [],
         videos: eventType.videos || [],
-        packageCount: bundleCountByEvent[eventType.id] || 0,
+        availableCities: resolveEventCityOptions(eventSettings, eventType),
+        packageCount: templateCountByEvent[eventType.id] || 0,
         itemCount: itemCountByEvent[eventType.id] || 0,
       })));
     } catch (error) {
@@ -2138,27 +2795,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(and(eq(eventItemsTable.eventTypeId, eventTypeId), eq(eventItemsTable.isActive, true)))
         .orderBy(eventItemsTable.displayOrder);
 
-      const packages = await db
-        .select()
-        .from(eventBundlesTable)
-        .where(and(eq(eventBundlesTable.eventTypeId, eventTypeId), eq(eventBundlesTable.isActive, true)))
-        .orderBy(eventBundlesTable.displayOrder);
+      const templates = await getMobileTemplatesForEventType(eventTypeId);
+      const eventSettings = await getEventSettings();
 
       res.json({
         ...eventType,
         images: eventType.images || [],
         videos: eventType.videos || [],
+        availableCities: resolveEventCityOptions(eventSettings, eventType),
         items,
-        packages: packages.map((bundle) => ({
-          ...bundle,
-          features: bundle.features || [],
-          images: bundle.images || [],
-          videos: bundle.videos || [],
-        })),
+        packages: templates,
+        templates,
       });
     } catch (error) {
       console.error('Error fetching mobile event detail:', error);
       res.status(500).json({ message: 'Failed to fetch event details' });
+    }
+  });
+
+  app.get('/api/mobile/event-types/:eventTypeId/templates', async (req, res) => {
+    try {
+      const eventTypeId = parseInt(req.params.eventTypeId);
+      if (isNaN(eventTypeId)) return res.status(400).json({ message: 'Invalid event type ID' });
+
+      const [eventType] = await db
+        .select()
+        .from(eventTypesTable)
+        .where(and(eq(eventTypesTable.id, eventTypeId), eq(eventTypesTable.isActive, true)));
+
+      if (!eventType) return res.status(404).json({ message: 'Event type not found' });
+
+      res.json(await getMobileTemplatesForEventType(eventTypeId));
+    } catch (error) {
+      console.error('Error fetching mobile templates:', error);
+      res.status(500).json({ message: 'Failed to fetch templates' });
     }
   });
 
@@ -2232,6 +2902,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/mobile/templates/:templateId/customization', async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.templateId);
+      if (isNaN(templateId)) return res.status(400).json({ message: 'Invalid template ID' });
+
+      const [template] = await db
+        .select()
+        .from(eventTemplatesTable)
+        .where(and(eq(eventTemplatesTable.id, templateId), eq(eventTemplatesTable.isActive, true)));
+
+      if (!template) return res.status(404).json({ message: 'Template not found' });
+
+      const [eventType] = await db
+        .select()
+        .from(eventTypesTable)
+        .where(and(eq(eventTypesTable.id, template.eventTypeId), eq(eventTypesTable.isActive, true)));
+
+      if (!eventType) return res.status(404).json({ message: 'Event type not found' });
+      const eventSettings = await getEventSettings();
+      const mobileEventType = {
+        ...eventType,
+        images: eventType.images || [],
+        videos: eventType.videos || [],
+        availableCities: resolveEventCityOptions(eventSettings, eventType),
+      };
+
+      const [sourceBundle] = template.sourceBundleId
+        ? await db
+            .select()
+            .from(eventBundlesTable)
+            .where(and(eq(eventBundlesTable.id, template.sourceBundleId), eq(eventBundlesTable.isActive, true)))
+        : [];
+
+      const templateItems = await db
+        .select({
+          templateItemId: eventTemplateItemsTable.id,
+          eventItemId: eventTemplateItemsTable.eventItemId,
+          defaultOptionId: eventTemplateItemsTable.defaultOptionId,
+          title: eventTemplateItemsTable.title,
+          description: eventTemplateItemsTable.description,
+          images: eventTemplateItemsTable.images,
+          videos: eventTemplateItemsTable.videos,
+          quantity: eventTemplateItemsTable.quantity,
+          isRequired: eventTemplateItemsTable.isRequired,
+          displayOrder: eventTemplateItemsTable.displayOrder,
+          itemName: eventItemsTable.name,
+          itemDescription: eventItemsTable.description,
+          itemCategory: eventItemsTable.category,
+        })
+        .from(eventTemplateItemsTable)
+        .leftJoin(eventItemsTable, eq(eventTemplateItemsTable.eventItemId, eventItemsTable.id))
+        .where(eq(eventTemplateItemsTable.templateId, templateId))
+        .orderBy(eventTemplateItemsTable.displayOrder);
+
+      if (templateItems.length > 0) {
+        const eventItemIds = templateItems
+          .map((item) => item.eventItemId)
+          .filter((id): id is number => typeof id === "number");
+        const optionsByItem = await getActiveVendorOptionsByItem(eventItemIds);
+        const items = templateItems.map((item) => {
+          const itemOptions = item.eventItemId ? optionsByItem[item.eventItemId] || [] : [];
+          const defaultOption = itemOptions.find((option) => option.id === item.defaultOptionId) || itemOptions[0] || null;
+          return {
+            bundleItemId: item.templateItemId,
+            templateItemId: item.templateItemId,
+            eventItemId: item.eventItemId || 0,
+            defaultOptionId: item.defaultOptionId,
+            quantity: item.quantity || 1,
+            priceOverride: null,
+            displayOrder: item.displayOrder,
+            itemName: item.title || item.itemName || "Item",
+            itemDescription: item.description || item.itemDescription,
+            itemCategory: item.itemCategory,
+            isRequired: item.isRequired,
+            images: normalizeArray(item.images),
+            videos: normalizeArray(item.videos),
+            vendorOptions: itemOptions,
+            defaultOption,
+          };
+        });
+
+        const calculatedBasePrice = items.reduce((sum, item) => {
+          const price = item.defaultOption?.price ?? 0;
+          return sum + price * (item.quantity || 1);
+        }, 0);
+        const packageCard = mobileTemplateCard({
+          template,
+          sourceBundle,
+          items,
+          calculatedBasePrice: calculatedBasePrice || null,
+        });
+
+        return res.json({
+          eventType: mobileEventType,
+          package: packageCard,
+          template: packageCard,
+          items,
+        });
+      }
+
+      if (!sourceBundle) {
+        const packageCard = mobileTemplateCard({ template, sourceBundle: null, items: [] });
+        return res.json({
+          eventType: mobileEventType,
+          package: packageCard,
+          template: packageCard,
+          items: [],
+        });
+      }
+
+      const includedItems = await db
+        .select({
+          bundleItemId: bundleItemsTable.id,
+          eventItemId: bundleItemsTable.eventItemId,
+          defaultOptionId: bundleItemsTable.defaultOptionId,
+          quantity: bundleItemsTable.quantity,
+          priceOverride: bundleItemsTable.priceOverride,
+          displayOrder: bundleItemsTable.displayOrder,
+          itemName: eventItemsTable.name,
+          itemDescription: eventItemsTable.description,
+          itemCategory: eventItemsTable.category,
+          isRequired: eventItemsTable.isRequired,
+        })
+        .from(bundleItemsTable)
+        .leftJoin(eventItemsTable, eq(bundleItemsTable.eventItemId, eventItemsTable.id))
+        .where(and(eq(bundleItemsTable.bundleId, sourceBundle.id), eq(bundleItemsTable.isIncluded, true)))
+        .orderBy(bundleItemsTable.displayOrder);
+
+      const eventItemIds = includedItems.map((item) => item.eventItemId);
+      const optionsByItem = await getActiveVendorOptionsByItem(eventItemIds);
+      const items = includedItems.map((item) => {
+        const itemOptions = optionsByItem[item.eventItemId] || [];
+        const defaultOption = itemOptions.find((option) => option.id === item.defaultOptionId) || itemOptions[0] || null;
+        return {
+          ...item,
+          vendorOptions: itemOptions,
+          defaultOption,
+        };
+      });
+
+      const calculatedBasePrice = items.reduce((sum, item) => {
+        const price = item.priceOverride ?? item.defaultOption?.price ?? 0;
+        return sum + price * (item.quantity || 1);
+      }, 0);
+      const packageCard = mobileTemplateCard({
+        template,
+        sourceBundle,
+        items,
+        calculatedBasePrice: items.length > 0 ? calculatedBasePrice : sourceBundle.basePrice,
+      });
+
+      res.json({
+        eventType: mobileEventType,
+        package: packageCard,
+        template: packageCard,
+        items,
+      });
+    } catch (error) {
+      console.error('Error fetching template customization:', error);
+      res.status(500).json({ message: 'Failed to fetch template customization' });
+    }
+  });
+
   app.get('/api/mobile/packages/:bundleId/customization', async (req, res) => {
     try {
       const bundleId = parseInt(req.params.bundleId);
@@ -2248,6 +3081,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(eventTypesTable)
         .where(eq(eventTypesTable.id, bundle.eventTypeId));
+      if (!eventType || eventType.isActive === false) return res.status(404).json({ message: 'Event type not found' });
+      const eventSettings = await getEventSettings();
+      const mobileEventType = {
+        ...eventType,
+        images: eventType.images || [],
+        videos: eventType.videos || [],
+        availableCities: resolveEventCityOptions(eventSettings, eventType),
+      };
 
       const includedItems = await db
         .select({
@@ -2314,7 +3155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 0);
 
       res.json({
-        eventType,
+        eventType: mobileEventType,
         package: {
           ...bundle,
           features: bundle.features || [],
@@ -2341,22 +3182,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Event date cannot be in the past' });
       }
 
+      const [eventTypeForCityValidation] = await db
+        .select()
+        .from(eventTypesTable)
+        .where(and(eq(eventTypesTable.id, bookingData.eventTypeId), eq(eventTypesTable.isActive, true)));
+      if (!eventTypeForCityValidation) {
+        return res.status(404).json({ message: 'Event type not found' });
+      }
+
       const eventSettings = await getEventSettings();
-      if (!activeCityValues(eventSettings).has(bookingData.location.toLowerCase())) {
+      if (!resolveEventCityValueSet(eventSettings, eventTypeForCityValidation).has(bookingData.location.toLowerCase())) {
         return res.status(400).json({ message: 'Selected city is not available' });
       }
 
       const booking = await db.transaction(async (tx) => {
         let basePrice = 0;
         let optionsPrice = 0;
+        let effectiveBundleId = bookingData.bundleId || null;
+        let directTemplateItems: Array<{
+          eventItemId: number | null;
+          defaultOptionId: number | null;
+          isRequired: boolean | null;
+          itemName: string | null;
+          quantity: number;
+          defaultPrice: number | null;
+          defaultOptionActive: boolean | null;
+        }> = [];
 
-        if (bookingData.bundleId) {
+        if (bookingData.templateId) {
+          const [template] = await tx
+            .select()
+            .from(eventTemplatesTable)
+            .where(
+              and(
+                eq(eventTemplatesTable.id, bookingData.templateId),
+                eq(eventTemplatesTable.eventTypeId, bookingData.eventTypeId),
+                eq(eventTemplatesTable.isActive, true)
+              )
+            );
+
+          if (!template) {
+            throw new Error('Template not found for this event type');
+          }
+
+          effectiveBundleId = template.sourceBundleId || effectiveBundleId;
+          directTemplateItems = await tx
+            .select({
+              eventItemId: eventTemplateItemsTable.eventItemId,
+              defaultOptionId: eventTemplateItemsTable.defaultOptionId,
+              isRequired: eventTemplateItemsTable.isRequired,
+              itemName: eventTemplateItemsTable.title,
+              quantity: eventTemplateItemsTable.quantity,
+              defaultPrice: itemVendorOptionsTable.price,
+              defaultOptionActive: itemVendorOptionsTable.isActive,
+            })
+            .from(eventTemplateItemsTable)
+            .leftJoin(itemVendorOptionsTable, eq(eventTemplateItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+            .where(eq(eventTemplateItemsTable.templateId, bookingData.templateId));
+        }
+
+        if (directTemplateItems.length > 0) {
+          const selectionByItem = new Map<number, typeof bookingData.selectedItemOptions[number]>();
+          for (const selection of bookingData.selectedItemOptions) {
+            if (selectionByItem.has(selection.eventItemId)) {
+              throw new Error(`Duplicate selection for event item: ${selection.eventItemId}`);
+            }
+            selectionByItem.set(selection.eventItemId, selection);
+          }
+
+          for (const templateItem of directTemplateItems) {
+            if (!templateItem.eventItemId) continue;
+            const hasSelection = selectionByItem.has(templateItem.eventItemId);
+            const hasDefault = !!templateItem.defaultOptionId && templateItem.defaultOptionActive !== false;
+            if (templateItem.isRequired && !hasSelection && !hasDefault) {
+              throw new Error(`Required event item needs a vendor option: ${templateItem.itemName || templateItem.eventItemId}`);
+            }
+            basePrice += (templateItem.defaultPrice ?? 0) * (templateItem.quantity || 1);
+          }
+
+          for (const itemSelection of bookingData.selectedItemOptions) {
+            const templateItem = directTemplateItems.find((item) => item.eventItemId === itemSelection.eventItemId);
+            if (!templateItem) {
+              throw new Error(`Event item is not part of this template: ${itemSelection.eventItemId}`);
+            }
+
+            const [selectedOption] = await tx
+              .select()
+              .from(itemVendorOptionsTable)
+              .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+              .where(
+                and(
+                  eq(itemVendorOptionsTable.id, itemSelection.optionId),
+                  eq(itemVendorOptionsTable.eventItemId, itemSelection.eventItemId),
+                  eq(itemVendorOptionsTable.isActive, true),
+                  eq(vendorsTable.id, itemVendorOptionsTable.vendorId)
+                )
+              );
+
+            if (!selectedOption) {
+              throw new Error(`Invalid vendor option ID: ${itemSelection.optionId}`);
+            }
+
+            const defaultPrice = templateItem.defaultPrice ?? 0;
+            optionsPrice += (selectedOption.item_vendor_options.price - defaultPrice) * (itemSelection.quantity || templateItem.quantity || 1);
+          }
+        } else if (effectiveBundleId) {
           const [bundle] = await tx
             .select()
             .from(eventBundlesTable)
             .where(
               and(
-                eq(eventBundlesTable.id, bookingData.bundleId),
+                eq(eventBundlesTable.id, effectiveBundleId),
                 eq(eventBundlesTable.eventTypeId, bookingData.eventTypeId),
                 eq(eventBundlesTable.isActive, true)
               )
@@ -2385,7 +3321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .leftJoin(itemVendorOptionsTable, eq(bundleItemsTable.defaultOptionId, itemVendorOptionsTable.id))
             .where(
               and(
-                eq(bundleItemsTable.bundleId, bookingData.bundleId),
+                eq(bundleItemsTable.bundleId, effectiveBundleId),
                 eq(bundleItemsTable.isIncluded, true),
                 eq(eventItemsTable.isActive, true)
               )
@@ -2445,7 +3381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const [updatedBundle] = await tx
             .update(eventBundlesTable)
             .set({ availableQuantity: sql`${eventBundlesTable.availableQuantity} - 1` })
-            .where(and(eq(eventBundlesTable.id, bookingData.bundleId), gt(eventBundlesTable.availableQuantity, 0)))
+            .where(and(eq(eventBundlesTable.id, effectiveBundleId), gt(eventBundlesTable.availableQuantity, 0)))
             .returning();
 
           if (!updatedBundle) {
@@ -2462,13 +3398,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        if (directTemplateItems.length > 0 && effectiveBundleId) {
+          const [updatedBundle] = await tx
+            .update(eventBundlesTable)
+            .set({ availableQuantity: sql`${eventBundlesTable.availableQuantity} - 1` })
+            .where(and(eq(eventBundlesTable.id, effectiveBundleId), gt(eventBundlesTable.availableQuantity, 0)))
+            .returning();
+
+          if (!updatedBundle) {
+            throw new Error('Package is not available');
+          }
+        }
+
         const totalPrice = basePrice + optionsPrice;
         const [createdBooking] = await tx
             .insert(bookingsTable)
             .values({
             clientId: mobileUser.id,
             eventTypeId: bookingData.eventTypeId,
-            bundleId: bookingData.bundleId || null,
+            bundleId: effectiveBundleId,
+            templateId: bookingData.templateId || null,
             eventDate: bookingData.eventDate,
             eventTime: bookingData.eventTime || null,
             location: bookingData.location,
@@ -2489,9 +3438,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         await tx.insert(pricingHistoryTable).values({
           bookingId: createdBooking.id,
-          bundleId: bookingData.bundleId || null,
+          bundleId: effectiveBundleId,
           basePrice,
           additionalOptions: {
+            templateId: bookingData.templateId || null,
             itemOptions: bookingData.selectedItemOptions,
           },
           totalPrice,
@@ -2543,18 +3493,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eventTypeIcon: eventTypesTable.icon,
           eventTypeImages: eventTypesTable.images,
           bundleId: bookingsTable.bundleId,
+          templateId: bookingsTable.templateId,
+          templateName: eventTemplatesTable.name,
           bundleName: eventBundlesTable.name,
           bundleTier: eventBundlesTable.tier,
         })
         .from(bookingsTable)
         .leftJoin(eventTypesTable, eq(bookingsTable.eventTypeId, eventTypesTable.id))
         .leftJoin(eventBundlesTable, eq(bookingsTable.bundleId, eventBundlesTable.id))
+        .leftJoin(eventTemplatesTable, eq(bookingsTable.templateId, eventTemplatesTable.id))
         .where(eq(bookingsTable.clientId, mobileUser.id))
         .orderBy(sql`${bookingsTable.createdAt} desc`);
 
       res.json(bookings.map((booking) => ({
         ...booking,
         eventTypeImages: booking.eventTypeImages || [],
+        bundleName: booking.templateName || booking.bundleName,
       })));
     } catch (error) {
       console.error('Error fetching mobile bookings:', error);
@@ -2587,12 +3541,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           basePrice: bookingsTable.basePrice,
           optionsPrice: bookingsTable.optionsPrice,
           totalPrice: bookingsTable.totalPrice,
+          quotationNotes: bookingsTable.quotationNotes,
+          quotationValidUntil: bookingsTable.quotationValidUntil,
           createdAt: bookingsTable.createdAt,
           eventTypeId: bookingsTable.eventTypeId,
           eventTypeName: eventTypesTable.name,
           eventTypeDescription: eventTypesTable.description,
           eventTypeImages: eventTypesTable.images,
           bundleId: bookingsTable.bundleId,
+          templateId: bookingsTable.templateId,
+          templateName: eventTemplatesTable.name,
           bundleName: eventBundlesTable.name,
           bundleTier: eventBundlesTable.tier,
           bundleDescription: eventBundlesTable.description,
@@ -2600,6 +3558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(bookingsTable)
         .leftJoin(eventTypesTable, eq(bookingsTable.eventTypeId, eventTypesTable.id))
         .leftJoin(eventBundlesTable, eq(bookingsTable.bundleId, eventBundlesTable.id))
+        .leftJoin(eventTemplatesTable, eq(bookingsTable.templateId, eventTemplatesTable.id))
         .where(and(eq(bookingsTable.id, bookingId), eq(bookingsTable.clientId, mobileUser.id)));
 
       if (!booking) return res.status(404).json({ message: 'Booking not found' });
@@ -2609,6 +3568,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(paymentsTable)
         .where(eq(paymentsTable.bookingId, bookingId))
         .orderBy(paymentsTable.createdAt);
+
+      const [latestProposal] = await db
+        .select()
+        .from(bookingProposalsTable)
+        .where(eq(bookingProposalsTable.bookingId, bookingId))
+        .orderBy(desc(bookingProposalsTable.createdAt))
+        .limit(1);
+
+      const proposalItems = latestProposal
+        ? await db
+            .select()
+            .from(bookingProposalItemsTable)
+            .where(eq(bookingProposalItemsTable.proposalId, latestProposal.id))
+            .orderBy(bookingProposalItemsTable.id)
+        : [];
 
       const packageItems = booking.bundleId
         ? await db
@@ -2631,6 +3605,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
             .where(eq(bundleItemsTable.bundleId, booking.bundleId))
             .orderBy(bundleItemsTable.displayOrder)
+        : booking.templateId
+        ? await db
+            .select({
+              bundleItemId: eventTemplateItemsTable.id,
+              eventItemId: eventTemplateItemsTable.eventItemId,
+              defaultOptionId: eventTemplateItemsTable.defaultOptionId,
+              quantity: eventTemplateItemsTable.quantity,
+              priceOverride: sql<number | null>`null`,
+              itemName: eventTemplateItemsTable.title,
+              itemCategory: eventItemsTable.category,
+              optionName: itemVendorOptionsTable.optionName,
+              optionPrice: itemVendorOptionsTable.price,
+              optionImages: eventTemplateItemsTable.images,
+              vendorName: vendorsTable.businessName,
+            })
+            .from(eventTemplateItemsTable)
+            .leftJoin(eventItemsTable, eq(eventTemplateItemsTable.eventItemId, eventItemsTable.id))
+            .leftJoin(itemVendorOptionsTable, eq(eventTemplateItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+            .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+            .where(eq(eventTemplateItemsTable.templateId, booking.templateId))
+            .orderBy(eventTemplateItemsTable.displayOrder)
         : [];
 
       const selectedItemOptions = parseMobileSelectedItemOptions(booking.selectedOptions);
@@ -2674,11 +3669,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         ...booking,
         eventTypeImages: booking.eventTypeImages || [],
+        bundleName: booking.templateName || booking.bundleName,
         packageItems: packageItems.map((item) => ({
           ...item,
           optionImages: item.optionImages || [],
-          selected: selectionByItemId[item.eventItemId] || null,
-          effectiveOption: selectionByItemId[item.eventItemId]?.selectedOption || {
+          selected: selectionByItemId[item.eventItemId || 0] || null,
+          effectiveOption: selectionByItemId[item.eventItemId || 0]?.selectedOption || {
             optionName: item.optionName,
             price: item.optionPrice,
             images: item.optionImages || [],
@@ -2686,11 +3682,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         })),
         selectedItemOptions: Object.values(selectionByItemId),
+        proposal: latestProposal ? { ...latestProposal, items: proposalItems } : null,
         payments,
       });
     } catch (error) {
       console.error('Error fetching mobile booking detail:', error);
       res.status(500).json({ message: 'Failed to fetch booking' });
+    }
+  });
+
+  app.post('/api/mobile/bookings/:bookingId/proposal/accept', async (req, res) => {
+    const mobileUser = await requireMobileClient(req, res);
+    if (!mobileUser) return;
+
+    try {
+      const bookingId = parseInt(req.params.bookingId);
+      if (isNaN(bookingId)) return res.status(400).json({ message: 'Invalid booking ID' });
+
+      const [booking] = await db
+        .select()
+        .from(bookingsTable)
+        .where(and(eq(bookingsTable.id, bookingId), eq(bookingsTable.clientId, mobileUser.id)));
+
+      if (!booking) return res.status(404).json({ message: 'Booking not found' });
+      if (!canTransitionBookingStatus(booking.status, BOOKING_STATUS.QUOTATION_ACCEPTED)) {
+        return res.status(400).json({ message: 'Proposal is not ready to accept' });
+      }
+
+      const updatedBooking = await db.transaction(async (tx) => {
+        const [latestProposal] = await tx
+          .select()
+          .from(bookingProposalsTable)
+          .where(eq(bookingProposalsTable.bookingId, bookingId))
+          .orderBy(desc(bookingProposalsTable.createdAt))
+          .limit(1);
+
+        if (latestProposal) {
+          await tx
+            .update(bookingProposalsTable)
+            .set({
+              status: PROPOSAL_STATUS.ACCEPTED,
+              acceptedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(bookingProposalsTable.id, latestProposal.id));
+        }
+
+        const [updated] = await tx
+          .update(bookingsTable)
+          .set({
+            status: BOOKING_STATUS.QUOTATION_ACCEPTED,
+            updatedAt: new Date(),
+          })
+          .where(eq(bookingsTable.id, bookingId))
+          .returning();
+
+        await tx.insert(bookingStatusEventsTable).values({
+          bookingId,
+          fromStatus: booking.status,
+          toStatus: BOOKING_STATUS.QUOTATION_ACCEPTED,
+          note: "Client accepted proposal",
+          createdBy: mobileUser.id,
+        });
+
+        return updated;
+      });
+
+      syncBookingStatusToErp(bookingId, BOOKING_STATUS.QUOTATION_ACCEPTED).catch((error) => {
+        console.error("Failed to sync mobile proposal acceptance to ERP:", error);
+      });
+
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error('Error accepting mobile proposal:', error);
+      res.status(500).json({ message: 'Failed to accept proposal' });
+    }
+  });
+
+  app.post('/api/mobile/bookings/:bookingId/proposal/reject', async (req, res) => {
+    const mobileUser = await requireMobileClient(req, res);
+    if (!mobileUser) return;
+
+    try {
+      const bookingId = parseInt(req.params.bookingId);
+      if (isNaN(bookingId)) return res.status(400).json({ message: 'Invalid booking ID' });
+      const decision = proposalDecisionSchema.parse(req.body || {});
+
+      const [booking] = await db
+        .select()
+        .from(bookingsTable)
+        .where(and(eq(bookingsTable.id, bookingId), eq(bookingsTable.clientId, mobileUser.id)));
+
+      if (!booking) return res.status(404).json({ message: 'Booking not found' });
+      if (!canTransitionBookingStatus(booking.status, BOOKING_STATUS.QUOTATION_REJECTED)) {
+        return res.status(400).json({ message: 'Proposal is not ready to reject' });
+      }
+
+      const decisionNote = decision.note?.trim();
+      const notes = decisionNote
+        ? [booking.notes, `Client requested changes: ${decisionNote}`].filter(Boolean).join("\n")
+        : booking.notes;
+
+      const updatedBooking = await db.transaction(async (tx) => {
+        const [latestProposal] = await tx
+          .select()
+          .from(bookingProposalsTable)
+          .where(eq(bookingProposalsTable.bookingId, bookingId))
+          .orderBy(desc(bookingProposalsTable.createdAt))
+          .limit(1);
+
+        if (latestProposal) {
+          await tx
+            .update(bookingProposalsTable)
+            .set({
+              status: PROPOSAL_STATUS.REJECTED,
+              rejectedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(bookingProposalsTable.id, latestProposal.id));
+        }
+
+        const [updated] = await tx
+          .update(bookingsTable)
+          .set({
+            status: BOOKING_STATUS.QUOTATION_REJECTED,
+            notes,
+            updatedAt: new Date(),
+          })
+          .where(eq(bookingsTable.id, bookingId))
+          .returning();
+
+        await tx.insert(bookingStatusEventsTable).values({
+          bookingId,
+          fromStatus: booking.status,
+          toStatus: BOOKING_STATUS.QUOTATION_REJECTED,
+          note: decisionNote ? `Client requested changes: ${decisionNote}` : "Client requested proposal changes",
+          createdBy: mobileUser.id,
+        });
+
+        return updated;
+      });
+
+      syncBookingStatusToErp(bookingId, BOOKING_STATUS.QUOTATION_REJECTED).catch((error) => {
+        console.error("Failed to sync mobile proposal rejection to ERP:", error);
+      });
+
+      res.json(updatedBooking);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid proposal response', errors: error.errors });
+      }
+      console.error('Error rejecting mobile proposal:', error);
+      res.status(500).json({ message: 'Failed to reject proposal' });
     }
   });
   
@@ -2820,6 +3963,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(enhancedBookings);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching bookings for admin' });
+    }
+  });
+
+  app.get('/api/admin/bookings/:bookingId/proposal-workspace', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const bookingId = parseInt(req.params.bookingId);
+      if (isNaN(bookingId)) return res.status(400).json({ message: 'Invalid booking ID' });
+
+      const [booking] = await db
+        .select({
+          id: bookingsTable.id,
+          clientId: bookingsTable.clientId,
+          status: bookingsTable.status,
+          eventDate: bookingsTable.eventDate,
+          eventTime: bookingsTable.eventTime,
+          location: bookingsTable.location,
+          guestCount: bookingsTable.guestCount,
+          budget: bookingsTable.budget,
+          specialRequests: bookingsTable.specialRequests,
+          questionnaireResponses: bookingsTable.questionnaireResponses,
+          selectedOptions: bookingsTable.selectedOptions,
+          clientAttachments: bookingsTable.clientAttachments,
+          basePrice: bookingsTable.basePrice,
+          optionsPrice: bookingsTable.optionsPrice,
+          totalPrice: bookingsTable.totalPrice,
+          quotationNotes: bookingsTable.quotationNotes,
+          quotationValidUntil: bookingsTable.quotationValidUntil,
+          createdAt: bookingsTable.createdAt,
+          eventTypeId: bookingsTable.eventTypeId,
+          eventTypeName: eventTypesTable.name,
+          eventTypeDescription: eventTypesTable.description,
+          bundleId: bookingsTable.bundleId,
+          bundleName: eventBundlesTable.name,
+          bundleDescription: eventBundlesTable.description,
+          clientName: users.fullName,
+          clientUsername: users.username,
+          clientPhone: users.phone,
+          clientEmail: users.email,
+        })
+        .from(bookingsTable)
+        .leftJoin(eventTypesTable, eq(bookingsTable.eventTypeId, eventTypesTable.id))
+        .leftJoin(eventBundlesTable, eq(bookingsTable.bundleId, eventBundlesTable.id))
+        .leftJoin(users, eq(bookingsTable.clientId, users.id))
+        .where(eq(bookingsTable.id, bookingId));
+
+      if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+      const packageItems = booking.bundleId
+        ? await db
+            .select({
+              bundleItemId: bundleItemsTable.id,
+              eventItemId: bundleItemsTable.eventItemId,
+              quantity: bundleItemsTable.quantity,
+              priceOverride: bundleItemsTable.priceOverride,
+              itemName: eventItemsTable.name,
+              itemDescription: eventItemsTable.description,
+              itemCategory: eventItemsTable.category,
+              optionName: itemVendorOptionsTable.optionName,
+              optionDescription: itemVendorOptionsTable.description,
+              optionPrice: itemVendorOptionsTable.price,
+              vendorId: itemVendorOptionsTable.vendorId,
+              vendorName: vendorsTable.businessName,
+            })
+            .from(bundleItemsTable)
+            .leftJoin(eventItemsTable, eq(bundleItemsTable.eventItemId, eventItemsTable.id))
+            .leftJoin(itemVendorOptionsTable, eq(bundleItemsTable.defaultOptionId, itemVendorOptionsTable.id))
+            .leftJoin(vendorsTable, eq(itemVendorOptionsTable.vendorId, vendorsTable.id))
+            .where(eq(bundleItemsTable.bundleId, booking.bundleId))
+            .orderBy(bundleItemsTable.displayOrder)
+        : [];
+
+      const [latestProposal] = await db
+        .select()
+        .from(bookingProposalsTable)
+        .where(eq(bookingProposalsTable.bookingId, bookingId))
+        .orderBy(desc(bookingProposalsTable.createdAt))
+        .limit(1);
+
+      const proposalItems = latestProposal
+        ? await db
+            .select()
+            .from(bookingProposalItemsTable)
+            .where(eq(bookingProposalItemsTable.proposalId, latestProposal.id))
+            .orderBy(bookingProposalItemsTable.id)
+        : [];
+
+      const payments = await db
+        .select()
+        .from(paymentsTable)
+        .where(eq(paymentsTable.bookingId, bookingId))
+        .orderBy(paymentsTable.createdAt);
+
+      const statusEvents = await db
+        .select()
+        .from(bookingStatusEventsTable)
+        .where(eq(bookingStatusEventsTable.bookingId, bookingId))
+        .orderBy(bookingStatusEventsTable.createdAt);
+
+      res.json({
+        booking,
+        packageItems,
+        latestProposal: latestProposal ? { ...latestProposal, items: proposalItems } : null,
+        payments,
+        statusEvents,
+      });
+    } catch (error) {
+      console.error('Error fetching proposal workspace:', error);
+      res.status(500).json({ message: 'Failed to fetch proposal workspace' });
+    }
+  });
+
+  app.post('/api/admin/bookings/:bookingId/proposals', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.user.userType !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+
+    try {
+      const bookingId = parseInt(req.params.bookingId);
+      if (isNaN(bookingId)) return res.status(400).json({ message: 'Invalid booking ID' });
+      const input = createProposalSchema.parse(req.body);
+
+      const [booking] = await db.select().from(bookingsTable).where(eq(bookingsTable.id, bookingId));
+      if (!booking) return res.status(404).json({ message: 'Booking not found' });
+      if ([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.COMPLETED].includes(booking.status as any)) {
+        return res.status(400).json({ message: 'Cannot create proposal for this booking status' });
+      }
+
+      const proposalItems = input.items.map((item) => {
+        const totalPrice = Number((item.quantity * item.unitPrice).toFixed(2));
+        return {
+          title: item.title,
+          description: item.description || null,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice,
+          vendorId: item.vendorId || null,
+          eventItemId: item.eventItemId || null,
+        };
+      });
+      const calculatedTotal = Number(proposalItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2));
+      const totalPrice = input.totalPrice ?? calculatedTotal;
+      const depositAmount = input.depositAmount ?? null;
+      const finalAmount = input.finalAmount ?? (depositAmount !== null ? Math.max(totalPrice - depositAmount, 0) : null);
+      const status = input.sendNow ? PROPOSAL_STATUS.SENT : PROPOSAL_STATUS.DRAFT;
+      const nextBookingStatus = input.sendNow ? BOOKING_STATUS.QUOTATION_SENT : booking.status;
+
+      const proposal = await db.transaction(async (tx) => {
+        const [createdProposal] = await tx
+          .insert(bookingProposalsTable)
+          .values({
+            bookingId,
+            status,
+            totalPrice,
+            depositAmount,
+            finalAmount,
+            notes: input.notes || null,
+            validUntil: input.validUntil || null,
+            sentAt: input.sendNow ? new Date() : null,
+            createdBy: req.user.id,
+          })
+          .returning();
+
+        const createdItems = await tx
+          .insert(bookingProposalItemsTable)
+          .values(proposalItems.map((item) => ({ ...item, proposalId: createdProposal.id })))
+          .returning();
+
+        if (input.sendNow) {
+          await tx
+            .update(bookingsTable)
+            .set({
+              status: nextBookingStatus,
+              totalPrice,
+              quotationNotes: input.notes || null,
+              quotationValidUntil: input.validUntil || null,
+              updatedAt: new Date(),
+            })
+            .where(eq(bookingsTable.id, bookingId));
+
+          await tx.insert(bookingStatusEventsTable).values({
+            bookingId,
+            fromStatus: booking.status,
+            toStatus: nextBookingStatus,
+            note: "Admin sent proposal",
+            createdBy: req.user.id,
+          });
+        }
+
+        return { ...createdProposal, items: createdItems };
+      });
+
+      if (input.sendNow) {
+        syncBookingStatusToErp(bookingId, nextBookingStatus).catch((error) => {
+          console.error("Failed to sync proposal status to ERP:", error);
+        });
+      }
+
+      res.status(201).json(proposal);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid proposal data', errors: error.errors });
+      }
+      console.error('Error creating proposal:', error);
+      res.status(500).json({ message: 'Failed to create proposal' });
     }
   });
 
@@ -4698,6 +6047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: req.body.name,
         description: req.body.description || '',
         icon: req.body.icon || '',
+        availableCities: normalizeEventCityValues(req.body.availableCities),
         isActive: req.body.isActive !== undefined ? req.body.isActive : true,
         createdByType: 'admin',
         createdBy: req.user.id
@@ -4734,6 +6084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: req.body.name !== undefined ? req.body.name : eventType.name,
         description: req.body.description !== undefined ? req.body.description : eventType.description,
         icon: req.body.icon !== undefined ? req.body.icon : eventType.icon,
+        availableCities: req.body.availableCities !== undefined ? normalizeEventCityValues(req.body.availableCities) : eventType.availableCities,
         isActive: req.body.isActive !== undefined ? req.body.isActive : eventType.isActive,
         updatedAt: new Date()
       });
@@ -5631,6 +6982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: req.body.description,
         icon: req.body.icon,
         category: req.body.category,
+        availableCities: normalizeEventCityValues(req.body.availableCities),
         createdByType: 'vendor',
         createdBy: req.user.id,
         vendorId: vendor.id,

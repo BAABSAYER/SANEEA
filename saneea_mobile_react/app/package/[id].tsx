@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { createBooking, getPackageCustomization, getQuestionnaireItems, PackageCustomization, QuestionnaireItem } from "../../src/api/mobile";
+import { createBooking, getQuestionnaireItems, getTemplateCustomization, PackageCustomization, QuestionnaireItem } from "../../src/api/mobile";
 import { AttachmentPicker } from "../../src/components/attachment-picker";
 import { CityField, DateField, GuestCountField, TimeField } from "../../src/components/form-controls";
 import { MediaCarousel } from "../../src/components/media-carousel";
+import { QuestionnaireFields } from "../../src/components/questionnaire-fields";
 import { Button, ErrorState, Field, LoadingState, PageHeader, Price, Screen, Section, Surface } from "../../src/components/ui";
 import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
@@ -28,7 +29,7 @@ export default function PackageScreen() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getPackageCustomization(packageId);
+      const data = await getTemplateCustomization(packageId);
       setCustomization(data);
       draft.setCustomization(data);
       setQuestions(await getQuestionnaireItems(data.eventType.id));
@@ -74,7 +75,8 @@ export default function PackageScreen() {
     try {
       const booking = await createBooking({
         eventTypeId: customization.eventType.id,
-        bundleId: customization.package.id,
+        templateId: customization.package.id,
+        bundleId: customization.package.sourceBundleId || null,
         eventDate: draft.eventDate,
         eventTime: draft.eventTime,
         location: draft.location,
@@ -96,17 +98,38 @@ export default function PackageScreen() {
 
   return (
     <Screen
-      bottom={<Button title={submitting ? t("loading") : t("confirmBooking")} onPress={submit} disabled={submitting} />}
+      bottom={<Button title={submitting ? t("loading") : t("submitEventRequest", { defaultValue: "Send request" })} onPress={submit} disabled={submitting} />}
       refreshing={loading}
       onRefresh={load}
     >
-      <PageHeader title={t("packageDetails")} subtitle={customization?.package.name} onBack={goBackOrHome} />
-      {customization ? <MediaCarousel images={customization.package.images} videos={customization.package.videos} /> : null}
+      <PageHeader
+        title={t("templateDetails", { defaultValue: "Option details" })}
+        subtitle={customization?.package.name}
+        onBack={goBackOrHome}
+      />
+      {customization ? <MediaCarousel images={customization.package.images} videos={customization.package.videos} height={210} /> : null}
       {loading ? <LoadingState label={t("loading")} /> : null}
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}
       {customization ? (
         <>
-          <Section title={t("customize")}>
+          <View style={styles.guidanceCard}>
+            <Text style={styles.guidanceTitle}>{t("proposalPromiseTitle", { defaultValue: "No final price yet" })}</Text>
+            <Text style={styles.guidanceText}>
+              {t("proposalPromiseBody", {
+                defaultValue: "Choose what you like. Saneea will review the request and send the final proposal before any payment.",
+              })}
+            </Text>
+          </View>
+          {customization.package.features?.length ? (
+            <Section title={t("includedInTemplate", { defaultValue: "Included in this template" })}>
+              <View style={styles.features}>
+                {customization.package.features.map((feature, index) => (
+                  <Text key={`${feature}-${index}`} style={styles.featurePill}>{feature}</Text>
+                ))}
+              </View>
+            </Section>
+          ) : null}
+          <Section title={t("customize", { defaultValue: "Customize" })}>
             {customization.items.map((item) => {
               const selected = draft.selectedItemOptions.find((choice) => choice.eventItemId === item.eventItemId);
               return (
@@ -116,14 +139,20 @@ export default function PackageScreen() {
                   <View style={styles.options}>
                     {item.vendorOptions.map((option) => {
                       const active = selected?.optionId === option.id;
+                      const previewImage = option.images?.[0];
                       return (
                         <Pressable
                           key={option.id}
                           style={[styles.option, active && styles.optionActive]}
                           onPress={() => draft.selectItemOption({ eventItemId: item.eventItemId, optionId: option.id, quantity: item.quantity || 1 })}
                         >
-                          <Text style={[styles.optionName, active && styles.optionNameActive]}>{option.optionName}</Text>
-                          <Price value={option.price} currency={t("sar")} />
+                          {previewImage ? <Image source={{ uri: previewImage }} style={styles.optionImage} /> : null}
+                          <View style={styles.optionCopy}>
+                            <Text style={[styles.optionName, active && styles.optionNameActive]}>{option.optionName}</Text>
+                            {option.description ? <Text style={styles.optionDescription}>{option.description}</Text> : null}
+                            <Price value={option.price} currency={t("sar")} />
+                          </View>
+                          {active ? <Text style={styles.selectedBadge}>{t("selected")}</Text> : null}
                         </Pressable>
                       );
                     })}
@@ -133,29 +162,37 @@ export default function PackageScreen() {
             })}
           </Section>
           <Section title={t("bookingDetails")}>
+            <Text style={styles.sectionHelp}>
+              {t("bookingDetailsHelp", { defaultValue: "Only the important details. You can add extra notes if needed." })}
+            </Text>
             <DateField label={t("eventDate")} value={draft.eventDate} onChange={(eventDate) => draft.setDetails({ eventDate })} />
             <TimeField label={t("eventTime")} value={draft.eventTime} onChange={(eventTime) => draft.setDetails({ eventTime })} />
-            <CityField label={t("location")} value={draft.location} onChange={(location) => draft.setDetails({ location })} />
+            <CityField
+              label={t("location")}
+              value={draft.location}
+              availableCities={customization.eventType.availableCities}
+              onChange={(location) => draft.setDetails({ location })}
+            />
             <GuestCountField label={t("guests")} value={draft.guestCount} onChange={(guestCount) => draft.setDetails({ guestCount })} />
             <Field label={t("budgetRange")} value={draft.budget} onChangeText={(budget) => draft.setDetails({ budget })} keyboardType="number-pad" />
             <Field label={t("notes")} value={draft.specialRequests} onChangeText={(specialRequests) => draft.setDetails({ specialRequests })} multiline />
             <AttachmentPicker value={draft.clientAttachments} onChange={(clientAttachments) => draft.setDetails({ clientAttachments })} />
           </Section>
           <Section title={t("questionnaire")}>
-            {questions.length === 0 ? <Text style={styles.itemMeta}>{t("noQuestions")}</Text> : null}
-            {questions.map((question) => (
-              <Field
-                key={question.id}
-                label={question.questionText}
-                value={String(draft.questionnaireResponses[String(question.id)] || "")}
-                onChangeText={(value) => draft.setQuestionResponse(question.id, value)}
-                keyboardType={question.questionType === "number" ? "number-pad" : "default"}
-              />
-            ))}
+            <QuestionnaireFields
+              questions={questions}
+              responses={draft.questionnaireResponses}
+              onChange={(questionId, value) => draft.setQuestionResponse(questionId, value)}
+            />
           </Section>
           <Surface>
             <View style={styles.totalRow}>
-              <Text style={styles.itemName}>{t("total")}</Text>
+              <View style={styles.totalCopy}>
+                <Text style={styles.itemName}>{t("estimatedTotal", { defaultValue: "Estimated total" })}</Text>
+                <Text style={styles.itemMeta}>
+                  {t("finalProposalNotice", { defaultValue: "Final price will arrive in the proposal." })}
+                </Text>
+              </View>
               <Price value={total} currency={t("sar")} />
             </View>
           </Surface>
@@ -175,20 +212,91 @@ export default function PackageScreen() {
 }
 
 const styles = StyleSheet.create({
+  guidanceCard: {
+    backgroundColor: colors.greenSoft,
+    borderColor: "#CFE7D7",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 7,
+    padding: 14,
+  },
+  guidanceTitle: {
+    color: colors.greenDark,
+    fontFamily: "Almarai-Bold",
+    fontSize: 17,
+    lineHeight: 25,
+  },
+  guidanceText: {
+    color: colors.ink,
+    fontFamily: "Almarai-Regular",
+    fontSize: 14,
+    lineHeight: 23,
+  },
+  features: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  featurePill: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: colors.ink,
+    fontFamily: "Almarai-Regular",
+    fontSize: 13,
+    overflow: "hidden",
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
   itemName: { color: colors.black, fontFamily: "Almarai-Bold", fontSize: 16 },
   itemMeta: { color: colors.muted, fontFamily: "Almarai-Regular", fontSize: 13, marginTop: 4 },
   options: { gap: 8, marginTop: 12 },
   option: {
+    alignItems: "center",
     borderColor: colors.line,
     borderRadius: radius.md,
     borderWidth: 1,
+    flexDirection: "row",
     gap: 4,
-    padding: 12,
+    minHeight: 76,
+    padding: 10,
   },
   optionActive: { backgroundColor: colors.greenSoft, borderColor: colors.green },
+  optionImage: {
+    backgroundColor: colors.line,
+    borderRadius: radius.sm,
+    height: 58,
+    width: 72,
+  },
+  optionCopy: {
+    flex: 1,
+    gap: 3,
+  },
   optionName: { color: colors.black, fontFamily: "Almarai-Bold", fontSize: 14 },
   optionNameActive: { color: colors.green },
+  optionDescription: {
+    color: colors.muted,
+    fontFamily: "Almarai-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  selectedBadge: {
+    color: colors.green,
+    fontFamily: "Almarai-Bold",
+    fontSize: 12,
+  },
+  sectionHelp: {
+    color: colors.muted,
+    fontFamily: "Almarai-Regular",
+    fontSize: 13,
+    lineHeight: 22,
+  },
   totalRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  totalCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
   reviewLine: {
     color: colors.ink,
     fontFamily: "Almarai-Regular",

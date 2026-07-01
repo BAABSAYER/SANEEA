@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { useTranslation } from "react-i18next";
 import { Button, Field, styles as uiStyles } from "./ui";
 import { colors, radius } from "../theme/colors";
-import { getEventSettings } from "../api/mobile";
+import { CityOption, getEventSettings } from "../api/mobile";
 
 type PickerOption = {
   label: string;
@@ -228,40 +228,62 @@ export function TimeField({
 export function CityField({
   label,
   value,
+  availableCities,
   onChange,
 }: {
   label: string;
   value: string;
+  availableCities?: CityOption[];
   onChange: (value: string) => void;
 }) {
   const { i18n, t } = useTranslation();
-  const fallbackCityOptions = [
-    ["Riyadh", "cityRiyadh"],
-    ["Jeddah", "cityJeddah"],
-    ["Makkah", "cityMakkah"],
-    ["Madinah", "cityMadinah"],
-    ["Dammam", "cityDammam"],
-    ["Khobar", "cityKhobar"],
-    ["Dhahran", "cityDhahran"],
-    ["Taif", "cityTaif"],
-    ["Tabuk", "cityTabuk"],
-    ["Abha", "cityAbha"],
-    ["Hail", "cityHail"],
-    ["Qassim", "cityQassim"],
-    ["Jazan", "cityJazan"],
-    ["Najran", "cityNajran"],
-    ["Al Ahsa", "cityAlAhsa"],
-    ["Yanbu", "cityYanbu"],
-  ].map(([value, key]) => ({ label: t(key), value }));
+  const language = i18n.language === "ar" ? "ar" : "en";
+  const fallbackCityOptions = useMemo(
+    () =>
+      [
+        ["Riyadh", "cityRiyadh"],
+        ["Jeddah", "cityJeddah"],
+        ["Makkah", "cityMakkah"],
+        ["Madinah", "cityMadinah"],
+        ["Dammam", "cityDammam"],
+        ["Khobar", "cityKhobar"],
+        ["Dhahran", "cityDhahran"],
+        ["Taif", "cityTaif"],
+        ["Tabuk", "cityTabuk"],
+        ["Abha", "cityAbha"],
+        ["Hail", "cityHail"],
+        ["Qassim", "cityQassim"],
+        ["Jazan", "cityJazan"],
+        ["Najran", "cityNajran"],
+        ["Al Ahsa", "cityAlAhsa"],
+        ["Yanbu", "cityYanbu"],
+      ].map(([value, key]) => ({ label: t(key), value })),
+    [t]
+  );
+  const providedCityOptions = useMemo(() => {
+    if (!Array.isArray(availableCities)) return null;
+    return availableCities
+      .filter((city) => city.active !== false)
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map((city) => ({
+        value: city.value,
+        label: language === "ar" ? city.labelAr : city.labelEn,
+      }))
+      .filter((city) => city.value && city.label);
+  }, [availableCities, language]);
   const [cityOptions, setCityOptions] = useState<PickerOption[]>(fallbackCityOptions);
 
   useEffect(() => {
+    if (providedCityOptions) {
+      setCityOptions(providedCityOptions);
+      return;
+    }
+
     let mounted = true;
 
     getEventSettings()
       .then((settings) => {
         if (!mounted) return;
-        const language = i18n.language === "ar" ? "ar" : "en";
         const options = (settings.availableCities || [])
           .filter((city) => city.active)
           .sort((a, b) => a.displayOrder - b.displayOrder)
@@ -280,7 +302,13 @@ export function CityField({
     return () => {
       mounted = false;
     };
-  }, [i18n.language]);
+  }, [fallbackCityOptions, language, providedCityOptions]);
+
+  useEffect(() => {
+    if (value && cityOptions.length > 0 && !cityOptions.some((city) => city.value === value)) {
+      onChange("");
+    }
+  }, [cityOptions, onChange, value]);
 
   return <SelectField label={label} value={value} placeholder={t("selectCity")} options={cityOptions} onChange={onChange} />;
 }

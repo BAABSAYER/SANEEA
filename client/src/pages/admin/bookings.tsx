@@ -41,7 +41,7 @@ import { apiRequest, authHeaders, queryClient } from "@/lib/queryClient";
 import { Booking, Vendor, BOOKING_STATUS, EVENT_TYPES } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { DollarSign, Calendar, FileText, CreditCard, MessageSquare } from "lucide-react";
+import { Calendar, FileText, CreditCard, MessageSquare } from "lucide-react";
 
 // Extend Booking type to include vendor info
 type BookingWithDetails = Booking & {
@@ -544,16 +544,17 @@ export default function AdminBookings() {
                       >
                         {t('common.viewDetails')}
                       </Button>
-                      {booking.status === BOOKING_STATUS.PENDING && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleCreateQuotation(booking)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          {t('adminBookings.createQuotation')}
-                        </Button>
+                      {![BOOKING_STATUS.CANCELLED, BOOKING_STATUS.COMPLETED].includes(booking.status as any) && (
+                        <Link href={`/admin/bookings/${booking.id}/proposal`}>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            {t('adminBookings.createQuotation', { defaultValue: 'Create proposal' })}
+                          </Button>
+                        </Link>
                       )}
                       <Button
                         variant="destructive"
@@ -605,16 +606,17 @@ export default function AdminBookings() {
                             >
                               {t('common.viewDetails')}
                             </Button>
-                            {booking.status === BOOKING_STATUS.PENDING && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleCreateQuotation(booking)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                <DollarSign className="h-3 w-3 mr-1" />
-                                {t('adminBookings.createQuotation')}
-                              </Button>
+                            {![BOOKING_STATUS.CANCELLED, BOOKING_STATUS.COMPLETED].includes(booking.status as any) && (
+                              <Link href={`/admin/bookings/${booking.id}/proposal`}>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  {t('adminBookings.createQuotation', { defaultValue: 'Create proposal' })}
+                                </Button>
+                              </Link>
                             )}
                             {booking.status === BOOKING_STATUS.QUOTATION_SENT && booking.totalPrice && (
                               <Button
@@ -911,7 +913,7 @@ export default function AdminBookings() {
       <Dialog open={isCreatingQuotation} onOpenChange={setIsCreatingQuotation}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('adminBookings.createQuotation')}</DialogTitle>
+            <DialogTitle>{t('adminBookings.createQuotation', { defaultValue: 'Create proposal' })}</DialogTitle>
           </DialogHeader>
           
           {selectedBooking && (
@@ -942,14 +944,14 @@ export default function AdminBookings() {
               {/* Quotation Items */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <Label className="text-base font-medium">Quotation Items</Label>
+                  <Label className="text-base font-medium">{t("adminBookings.proposalItems", { defaultValue: "Proposal items" })}</Label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addQuotationItem}
                   >
-                    Add Item
+                    {t("adminBookings.addProposalItem", { defaultValue: "Add item" })}
                   </Button>
                 </div>
                 
@@ -959,16 +961,16 @@ export default function AdminBookings() {
                       <CardContent className="p-4">
                         <div className="grid gap-3 md:grid-cols-12 md:items-end">
                           <div className="md:col-span-4">
-                            <Label htmlFor={`service-${index}`}>Service</Label>
+                            <Label htmlFor={`service-${index}`}>{t("adminBookings.service", { defaultValue: "Service" })}</Label>
                             <Input
                               id={`service-${index}`}
-                              placeholder="Service name"
+                              placeholder={t("adminBookings.serviceName", { defaultValue: "Service name" })}
                               value={item.service}
                               onChange={(e) => updateQuotationItem(index, 'service', e.target.value)}
                             />
                           </div>
                           <div className="md:col-span-2">
-                            <Label htmlFor={`price-${index}`}>Price ($)</Label>
+                            <Label htmlFor={`price-${index}`}>{t("adminBookings.priceSar", { defaultValue: "Price (SAR)" })}</Label>
                             <Input
                               id={`price-${index}`}
                               type="number"
@@ -978,10 +980,10 @@ export default function AdminBookings() {
                             />
                           </div>
                           <div className="md:col-span-5">
-                            <Label htmlFor={`description-${index}`}>Description</Label>
+                            <Label htmlFor={`description-${index}`}>{t("adminBookings.description", { defaultValue: "Description" })}</Label>
                             <Input
                               id={`description-${index}`}
-                              placeholder="Service description"
+                              placeholder={t("adminBookings.serviceDescription", { defaultValue: "Service description" })}
                               value={item.description}
                               onChange={(e) => updateQuotationItem(index, 'description', e.target.value)}
                             />
@@ -1007,7 +1009,7 @@ export default function AdminBookings() {
 
               {/* Total Price */}
               <div>
-                <Label htmlFor="totalPrice">Total Price ($)</Label>
+                <Label htmlFor="totalPrice">{t("adminBookings.finalProposalPrice", { defaultValue: "Final proposal price (SAR)" })}</Label>
                 <Input
                   id="totalPrice"
                   type="number"
@@ -1020,10 +1022,10 @@ export default function AdminBookings() {
 
               {/* Quotation Notes */}
               <div>
-                <Label htmlFor="quotationNotes">Additional Notes</Label>
+                <Label htmlFor="quotationNotes">{t("adminBookings.proposalNotes", { defaultValue: "Proposal notes" })}</Label>
                 <Textarea
                   id="quotationNotes"
-                  placeholder="Any additional terms, conditions, or notes for the client..."
+                  placeholder={t("adminBookings.proposalNotesPlaceholder", { defaultValue: "Any terms, conditions, or notes for the client..." })}
                   value={quotationForm.quotationNotes}
                   onChange={(e) => setQuotationForm(prev => ({ ...prev, quotationNotes: e.target.value }))}
                   rows={4}
@@ -1032,7 +1034,7 @@ export default function AdminBookings() {
 
               {/* Valid Until */}
               <div>
-                <Label htmlFor="quotationValidUntil">Quote Valid Until</Label>
+                <Label htmlFor="quotationValidUntil">{t("adminBookings.proposalValidUntil", { defaultValue: "Proposal valid until" })}</Label>
                 <Input
                   id="quotationValidUntil"
                   type="date"

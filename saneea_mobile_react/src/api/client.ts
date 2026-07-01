@@ -25,16 +25,16 @@ const PRODUCTION_API_URL = (expoExtra.apiBaseUrl || "https://saneea.baabsayer.sa
 const expoHost = getExpoHost();
 export const DEVELOPMENT_API_URL =
   Platform.OS === "web"
-    ? "http://localhost:5000"
+    ? "http://localhost:18087"
     : expoHost
-      ? `http://${expoHost}:5000`
+      ? `http://${expoHost}:18087`
       : Platform.OS === "android"
-        ? "http://10.0.2.2:5000"
-        : "http://localhost:5000";
+        ? "http://10.0.2.2:18087"
+        : "http://localhost:18087";
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-  PRODUCTION_API_URL;
+  (__DEV__ ? DEVELOPMENT_API_URL : PRODUCTION_API_URL);
 
 export const PRIVACY_POLICY_URL =
   expoExtra.privacyPolicyUrl ||
@@ -106,6 +106,7 @@ function localizeErrorMessage(message: string) {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = useAuthStore.getState().token;
   const headers: Record<string, string> = {
+    Accept: "application/json",
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
   };
@@ -117,7 +118,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const shortText = text.replace(/\s+/g, " ").trim().slice(0, 140);
+      const message = response.ok
+        ? `Server returned a non-JSON response from ${API_BASE_URL}${path}.`
+        : shortText || `Request failed (${response.status})`;
+      throw new Error(localizeErrorMessage(message));
+    }
+  }
   if (!response.ok) {
     throw new Error(localizeErrorMessage(data?.message || `Request failed (${response.status})`));
   }

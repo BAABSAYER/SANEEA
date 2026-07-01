@@ -13,6 +13,7 @@ import {
   UserCog,
   X,
   Package,
+  Images,
   Settings
 } from "lucide-react";
 import appIcon from '@/assets/logo.png';
@@ -37,6 +38,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const menuItems = [
     { name: t('navigation.dashboard'), path: "/admin", icon: <Home className="h-5 w-5" /> },
     { name: t('navigation.eventManagement'), path: "/admin/events", icon: <CalendarDays className="h-5 w-5" /> },
+    { name: t('navigation.templates', { defaultValue: 'Templates' }), path: "/admin/templates", icon: <Images className="h-5 w-5" /> },
     { name: t('navigation.bundles'), path: "/admin/bundles", icon: <Package className="h-5 w-5" /> },
     { name: t('navigation.bookings'), path: "/admin/bookings", icon: <Calendar className="h-5 w-5" /> },
     { name: t('navigation.schedule', { defaultValue: 'Schedule' }), path: "/admin/schedule", icon: <CalendarDays className="h-5 w-5" /> },

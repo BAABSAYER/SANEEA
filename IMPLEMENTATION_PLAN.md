@@ -1,94 +1,186 @@
-# Saneea Platform - Complete Implementation Plan
+# Saneea Request and Proposal Implementation Plan
 
-## User Requirements Integration
-- **Vendor-Confirmed Bookings**: Bookings must be confirmed by vendors before finalization
-- **Admin/Vendor Event Creation**: Both admins and vendors can create their own events
-- **Flexible Event Bundles**: Events have multiple pricing tiers (cheap/mid/high) with customizable options
-- **Bundle Quantities**: Each bundle tier can have different quantities (5 cheap, 5 mid, 5 high)
+## Product Goal
 
-## Implementation Phases
+Saneea's mobile users may be older, non-technical customers. The app should feel like browsing beautiful event ideas, not filling a business form. The main journey should be:
 
-### Phase 1: Critical Authentication & Security (Priority 1)
-1. **Unified JWT Authentication System**
-   - Replace session-based auth with JWT tokens
-   - Implement token refresh mechanism
-   - Add Flutter Secure Storage for mobile
-   - Create unified auth middleware
+1. See event types.
+2. Browse visual templates with images, videos, and included items.
+3. Choose a template, customize it, or request a custom event.
+4. Send only the essential event details.
+5. Receive a final proposal from Saneea.
+6. Accept the proposal.
+7. Upload deposit receipt.
+8. Upload final payment receipt.
 
-2. **Complete Permission System**
-   - Fix admin permission enforcement
-   - Add vendor-specific permissions
-   - Implement role-based UI rendering
-   - Create proper user management
+Prices shown before admin review are estimates only.
 
-### Phase 2: Enhanced Booking & Event System (Priority 1)
-3. **New Booking Workflow with Vendor Confirmation**
-   - Booking statuses: pending → vendor_review → confirmed → in_progress → completed
-   - Vendor must approve/reject bookings
-   - Client can view booking status in real-time
-   - Automated notifications for status changes
+## Current System Fit
 
-4. **Flexible Event Bundle System**
-   - Create event packages with multiple pricing tiers
-   - Each tier has customizable options and quantities
-   - Bundle inventory management
-   - Dynamic pricing calculation
+The existing schema already has most of the first version:
 
-5. **Admin & Vendor Event Creation**
-   - Both admins and vendors can create events
-   - Event approval workflow for vendor-created events
-   - Event category and bundle management
-   - Event visibility and availability controls
+- `event_types` for event categories.
+- `event_bundles` as current templates/packages.
+- `event_items`, `bundle_items`, and `item_vendor_options` for included services and customization.
+- `bookings` for submitted requests.
+- quotation fields on `bookings` for proposal notes, validity, and final price.
+- `payments` for deposit/final requests and receipt uploads.
 
-### Phase 3: Data Structure Overhaul (Priority 2)
-6. **Enhanced Database Schema**
-   - New tables: event_bundles, bundle_options, booking_confirmations
-   - Structured pricing and quotation tables
-   - Proper foreign key constraints and indexes
-   - Data migration scripts
+The first implementation should improve the UX and use these existing structures. A deeper database migration can follow after the flow is proven.
 
-7. **Business Logic Validation**
-   - Event date and availability validation
-   - Bundle inventory checking
-   - Booking conflict prevention
-   - Price calculation engine
+## Phase 1: Immediate UX Alignment
 
-### Phase 4: Communication & UX (Priority 2)
-8. **Enhanced Messaging System**
-   - WebSocket authentication
-   - File attachment support
-   - Message threading and context
-   - Real-time notifications
+Status: in progress.
 
-9. **Mobile App Improvements**
-   - Offline support
-   - Push notifications
-   - Better loading states
-   - Enhanced booking flow
+Mobile:
 
-### Phase 5: Advanced Features (Priority 3)
-10. **Payment Integration**
-    - Stripe/PayPal integration
-    - Automated invoice generation
-    - Refund handling
-    - Payment tracking
+- Rename user-facing package language to template language.
+- Show event templates visually before asking for details.
+- Show estimated price language instead of final price.
+- Add simple guidance cards explaining the flow.
+- Render questionnaire choice questions as large tap targets.
+- Show proposal-ready state on booking details.
+- Allow client to accept or reject a sent proposal.
 
-11. **Analytics & Reporting**
-    - Business metrics dashboard
-    - Vendor performance analytics
-    - Booking trend analysis
-    - Revenue reporting
+Web/Admin:
 
-## Implementation Timeline
-- **Week 1**: Phase 1 (Auth & Security)
-- **Week 2**: Phase 2 (Booking & Events) 
-- **Week 3**: Phase 3 (Data & Validation)
-- **Week 4**: Phase 4 (Communication & UX)
-- **Week 5**: Phase 5 (Advanced Features)
-- **Week 6**: Testing & Optimization
+- Keep existing proposal builder working.
+- Update quotation wording to proposal wording.
+- Use SAR labels instead of dollar labels.
+- Continue sending payment requests after proposal acceptance.
 
-## Key Design Decisions
-1. **Vendor-First Approach**: Vendors control their event confirmations
-2. **Flexible Bundling**: Event creators can customize bundle tiers and options
-3. **Real-time Updates**: All booking status changes trigger real-time notifications
-4. **Mobile-First UX**: Enhanced mobile experience with offline capabilities
+Backend:
+
+- Expose quotation/proposal fields in mobile booking detail.
+- Add mobile proposal accept/reject endpoints using existing booking status flow:
+  - `quotation_sent -> quotation_accepted`
+  - `quotation_sent -> quotation_rejected`
+
+## Phase 2: Dedicated Proposal Data Model
+
+Add these tables when we need a stronger audit trail and richer proposal builder.
+
+### `booking_proposals`
+
+- `id`
+- `booking_id`
+- `status`: draft, sent, accepted, rejected, expired
+- `total_price`
+- `deposit_amount`
+- `final_amount`
+- `notes`
+- `valid_until`
+- `sent_at`
+- `accepted_at`
+- `rejected_at`
+- `created_by`
+- `created_at`
+- `updated_at`
+
+### `booking_proposal_items`
+
+- `id`
+- `proposal_id`
+- `title`
+- `description`
+- `quantity`
+- `unit_price`
+- `total_price`
+- `vendor_id`
+- `event_item_id`
+- `created_at`
+
+### `booking_status_events`
+
+- `id`
+- `booking_id`
+- `from_status`
+- `to_status`
+- `note`
+- `created_by`
+- `created_at`
+
+## Phase 3: Dedicated Template Model
+
+Current `event_bundles` can act as templates, but a cleaner future model is:
+
+### `event_templates`
+
+- `id`
+- `event_type_id`
+- `name`
+- `description`
+- `estimated_min_price`
+- `estimated_max_price`
+- `images`
+- `videos`
+- `tags`
+- `is_active`
+- `display_order`
+- `created_at`
+- `updated_at`
+
+### `event_template_items`
+
+- `id`
+- `template_id`
+- `event_item_id`
+- `default_option_id`
+- `title`
+- `description`
+- `images`
+- `videos`
+- `quantity`
+- `is_required`
+- `display_order`
+- `created_at`
+- `updated_at`
+
+Migration path:
+
+1. Backfill `event_templates` from `event_bundles`.
+2. Backfill `event_template_items` from `bundle_items`.
+3. Keep old endpoints temporarily.
+4. Move mobile to template endpoints.
+5. Retire package wording and old package-only endpoints.
+
+## Phase 4: Visual Questionnaire Model
+
+The existing `questionnaire_items.options` field supports simple arrays. For richer visual questions, add:
+
+### `questionnaire_options`
+
+- `id`
+- `questionnaire_item_id`
+- `label_ar`
+- `label_en`
+- `value`
+- `image_url`
+- `display_order`
+- `created_at`
+
+This allows elderly users to answer by choosing cards with pictures instead of typing.
+
+## Phase 5: Admin Operating Flow
+
+Admin booking detail should become the control center:
+
+1. Review client request.
+2. See selected template and selected items.
+3. See questionnaire answers.
+4. Preview attachments inline.
+5. Create proposal from selected items.
+6. Edit line-item prices.
+7. Send proposal.
+8. Send deposit request after acceptance.
+9. Confirm deposit receipt.
+10. Send final payment request.
+11. Confirm final receipt.
+
+## Recommended Next Work
+
+1. Finish Phase 1 and test on a real phone.
+2. Add `booking_proposals` and `booking_proposal_items`.
+3. Replace the admin quotation modal with a full proposal page.
+4. Add image-backed questionnaire options.
+5. Convert `event_bundles` to proper `event_templates`.

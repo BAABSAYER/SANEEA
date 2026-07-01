@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Edit, Trash2, MessageSquare, Upload } from "lucide-react";
@@ -23,10 +24,23 @@ type EventType = {
   icon: string;
   images?: string[];
   videos?: string[];
+  availableCities?: string[];
   category?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+type CityOption = {
+  value: string;
+  labelAr: string;
+  labelEn: string;
+  active: boolean;
+  displayOrder: number;
+};
+
+type EventSettings = {
+  availableCities: CityOption[];
 };
 
 async function uploadAdminMedia(file: File, folder: string) {
@@ -114,6 +128,7 @@ function EventTypesTab() {
     category: "",
     images: "",
     videos: "",
+    availableCities: [] as string[],
     isActive: true
   });
   const [uploadingField, setUploadingField] = useState<"images" | "videos" | null>(null);
@@ -135,6 +150,19 @@ function EventTypesTab() {
   const { data: questionnaireItems } = useQuery<QuestionnaireItem[]>({
     queryKey: ["/api/questionnaire-items"],
   });
+
+  const { data: eventSettings } = useQuery<EventSettings>({
+    queryKey: ["/api/admin/event-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/event-settings", { headers: authHeaders() });
+      if (!res.ok) throw new Error("Failed to load event settings");
+      return res.json();
+    },
+  });
+
+  const activeCityOptions = (eventSettings?.availableCities || [])
+    .filter((city) => city.active)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   // Mutations
   const createEventTypeMutation = useMutation({
@@ -223,6 +251,7 @@ function EventTypesTab() {
       category: "",
       images: "",
       videos: "",
+      availableCities: [],
       isActive: true
     });
     setCurrentEventType(null);
@@ -252,6 +281,7 @@ function EventTypesTab() {
       category: eventType.category || "",
       images: (eventType.images || []).join("\n"),
       videos: (eventType.videos || []).join("\n"),
+      availableCities: eventType.availableCities || [],
       isActive: eventType.isActive
     });
     setEditDialogOpen(true);
@@ -293,6 +323,18 @@ function EventTypesTab() {
     };
 
     createQuestionMutation.mutate(questionData);
+  };
+
+  const toggleEventCity = (cityValue: string) => {
+    setFormData((prev) => {
+      const selected = new Set(prev.availableCities);
+      if (selected.has(cityValue)) {
+        selected.delete(cityValue);
+      } else {
+        selected.add(cityValue);
+      }
+      return { ...prev, availableCities: Array.from(selected) };
+    });
   };
 
   const getQuestionsForEventType = (eventTypeId: number) => {
@@ -385,6 +427,14 @@ function EventTypesTab() {
                   <span className="font-medium">{t('adminEvents.created')}:</span>
                   <span>{new Date(eventType.createdAt).toLocaleDateString()}</span>
                 </div>
+                <div className="flex justify-between gap-3">
+                  <span className="font-medium">{t('adminEvents.approvedCities')}:</span>
+                  <span className="text-right">
+                    {eventType.availableCities?.length
+                      ? eventType.availableCities.length
+                      : t('adminEvents.allActiveCities')}
+                  </span>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="pt-2">
@@ -470,6 +520,28 @@ function EventTypesTab() {
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                 placeholder={t('adminEvents.categoryPlaceholder')}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('adminEvents.approvedCities')}</label>
+              <p className="text-xs text-muted-foreground">{t('adminEvents.approvedCitiesHelp')}</p>
+              <div className="grid max-h-48 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
+                {activeCityOptions.map((city) => (
+                  <label key={city.value} className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm">
+                    <Checkbox
+                      checked={formData.availableCities.includes(city.value)}
+                      onCheckedChange={() => toggleEventCity(city.value)}
+                    />
+                    <span>{city.labelAr} / {city.labelEn}</span>
+                  </label>
+                ))}
+                {activeCityOptions.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">{t('adminEvents.noCitiesConfigured')}</span>
+                ) : null}
+              </div>
+              {formData.availableCities.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t('adminEvents.allActiveCitiesSelected')}</p>
+              ) : null}
             </div>
 
             <div className="space-y-2">

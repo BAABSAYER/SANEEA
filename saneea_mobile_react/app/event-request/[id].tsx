@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { createBooking, getQuestionnaireItems, QuestionnaireItem } from "../../src/api/mobile";
+import { CityOption, createBooking, getEventTypeDetail, getQuestionnaireItems, QuestionnaireItem } from "../../src/api/mobile";
 import { AttachmentPicker } from "../../src/components/attachment-picker";
 import { CityField, DateField, GuestCountField, TimeField } from "../../src/components/form-controls";
+import { QuestionnaireFields } from "../../src/components/questionnaire-fields";
 import { Button, ErrorState, Field, LoadingState, PageHeader, Price, Screen, Section, Surface } from "../../src/components/ui";
 import { goBackOrHome } from "../../src/navigation/safe-router";
 import { useAuthStore } from "../../src/state/auth-store";
@@ -18,6 +19,7 @@ export default function EventRequestScreen() {
   const draft = useBookingStore();
   const eventTypeId = Number(id);
   const [questions, setQuestions] = useState<QuestionnaireItem[]>([]);
+  const [availableCities, setAvailableCities] = useState<CityOption[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,12 @@ export default function EventRequestScreen() {
     setLoading(true);
     setError(null);
     try {
-      setQuestions(await getQuestionnaireItems(eventTypeId));
+      const [eventType, questionnaireItems] = await Promise.all([
+        getEventTypeDetail(eventTypeId),
+        getQuestionnaireItems(eventTypeId),
+      ]);
+      setAvailableCities(eventType.availableCities);
+      setQuestions(questionnaireItems);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("failedToLoad"));
     } finally {
@@ -80,7 +87,7 @@ export default function EventRequestScreen() {
 
   return (
     <Screen
-      bottom={<Button title={submitting ? t("loading") : t("confirmBooking")} onPress={submit} disabled={submitting} />}
+      bottom={<Button title={submitting ? t("loading") : t("submitEventRequest", { defaultValue: "Send request" })} onPress={submit} disabled={submitting} />}
       refreshing={loading}
       onRefresh={load}
     >
@@ -89,26 +96,34 @@ export default function EventRequestScreen() {
       {error ? <ErrorState message={error} retryLabel={t("retry")} onRetry={load} /> : null}
       {!loading && !error ? (
         <>
+          <View style={styles.guidanceCard}>
+            <Text style={styles.guidanceTitle}>{t("customRequestHelpTitle", { defaultValue: "Tell us the basics" })}</Text>
+            <Text style={styles.guidanceText}>
+              {t("customRequestHelpBody", {
+                defaultValue: "You do not need to know every detail now. Send the request and Saneea will prepare a proposal.",
+              })}
+            </Text>
+          </View>
           <Section title={t("bookingDetails")}>
             <DateField label={t("eventDate")} value={draft.eventDate} onChange={(eventDate) => draft.setDetails({ eventDate })} />
             <TimeField label={t("eventTime")} value={draft.eventTime} onChange={(eventTime) => draft.setDetails({ eventTime })} />
-            <CityField label={t("location")} value={draft.location} onChange={(location) => draft.setDetails({ location })} />
+            <CityField
+              label={t("location")}
+              value={draft.location}
+              availableCities={availableCities}
+              onChange={(location) => draft.setDetails({ location })}
+            />
             <GuestCountField label={t("guests")} value={draft.guestCount} onChange={(guestCount) => draft.setDetails({ guestCount })} />
             <Field label={t("budgetRange")} value={draft.budget} onChangeText={(budget) => draft.setDetails({ budget })} keyboardType="number-pad" />
             <Field label={t("notes")} value={draft.specialRequests} onChangeText={(specialRequests) => draft.setDetails({ specialRequests })} multiline />
             <AttachmentPicker value={draft.clientAttachments} onChange={(clientAttachments) => draft.setDetails({ clientAttachments })} />
           </Section>
           <Section title={t("questionnaire")}>
-            {questions.length === 0 ? <Text style={styles.muted}>{t("noQuestions")}</Text> : null}
-            {questions.map((question) => (
-              <Field
-                key={question.id}
-                label={question.questionText}
-                value={String(draft.questionnaireResponses[String(question.id)] || "")}
-                onChangeText={(value) => draft.setQuestionResponse(question.id, value)}
-                keyboardType={question.questionType === "number" ? "number-pad" : "default"}
-              />
-            ))}
+            <QuestionnaireFields
+              questions={questions}
+              responses={draft.questionnaireResponses}
+              onChange={(questionId, value) => draft.setQuestionResponse(questionId, value)}
+            />
           </Section>
           <Section title={t("review")}>
             <Surface>
@@ -126,6 +141,26 @@ export default function EventRequestScreen() {
 }
 
 const styles = StyleSheet.create({
+  guidanceCard: {
+    backgroundColor: colors.greenSoft,
+    borderColor: "#CFE7D7",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 7,
+    padding: 14,
+  },
+  guidanceTitle: {
+    color: colors.greenDark,
+    fontFamily: "Almarai-Bold",
+    fontSize: 17,
+    lineHeight: 25,
+  },
+  guidanceText: {
+    color: colors.ink,
+    fontFamily: "Almarai-Regular",
+    fontSize: 14,
+    lineHeight: 23,
+  },
   muted: {
     color: colors.muted,
     fontFamily: "Almarai-Regular",
