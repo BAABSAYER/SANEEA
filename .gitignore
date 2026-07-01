@@ -48,3 +48,5 @@ daoob_mobile/android/app/release
 # Logs
 logs
 *.log
+*.ips
+saneea_mobile_react/dist-local-test-*/
