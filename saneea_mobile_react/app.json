@@ -3,7 +3,7 @@
     "name": "سنيع",
     "slug": "saneea-mobile",
     "scheme": "saneea",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/brand/app_icon.png",
